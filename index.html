@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChoreTracker - Family Chore Management</title>
+    <style>
+        /* Fun cartoon colors */
+        :root {
+            --cartoon-orange: #FF6B35;
+            --cartoon-pink: #FF69B4;
+            --cartoon-blue: #00BFFF;
+            --cartoon-green: #7CB342;
+            --cartoon-yellow: #FFD700;
+            --cartoon-purple: #8B5CF6;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #fef9e7 0%, #fef3c7 25%, #fde68a 50%, #fcd34d 75%, #f59e0b 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Floating background icons */
+        .floating-icon {
+            position: absolute;
+            font-size: 2rem;
+            animation: float 6s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .floating-icon:nth-child(1) { 
+            top: 10%; left: 10%; animation-delay: 0s; 
+        }
+        .floating-icon:nth-child(2) { 
+            top: 20%; right: 15%; animation-delay: 1s; 
+        }
+        .floating-icon:nth-child(3) { 
+            bottom: 30%; left: 20%; animation-delay: 2s; 
+        }
+        .floating-icon:nth-child(4) { 
+            bottom: 20%; right: 10%; animation-delay: 3s; 
+        }
+        .floating-icon:nth-child(5) { 
+            top: 50%; left: 5%; animation-delay: 4s; 
+        }
+        .floating-icon:nth-child(6) { 
+            top: 40%; right: 5%; animation-delay: 5s; 
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        @keyframes bounce-fun {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
+        @keyframes wiggle {
+            0%, 7% { transform: rotateZ(0); }
+            15% { transform: rotateZ(-15deg); }
+            20% { transform: rotateZ(10deg); }
+            25% { transform: rotateZ(-10deg); }
+            30% { transform: rotateZ(6deg); }
+            35% { transform: rotateZ(-4deg); }
+            40%, 100% { transform: rotateZ(0); }
+        }
+
+        @keyframes pulse-rainbow {
+            0% { box-shadow: 0 0 10px #ff0000; }
+            16% { box-shadow: 0 0 15px #ffff00; }
+            33% { box-shadow: 0 0 10px #00ff00; }
+            50% { box-shadow: 0 0 15px #00ffff; }
+            66% { box-shadow: 0 0 10px #0000ff; }
+            83% { box-shadow: 0 0 15px #ff00ff; }
+            100% { box-shadow: 0 0 10px #ff0000; }
+        }
+
+        .animate-bounce-fun { animation: bounce-fun 2s ease-in-out infinite; }
+        .animate-wiggle { animation: wiggle 2s ease-in-out infinite; }
+        .animate-pulse-rainbow { animation: pulse-rainbow 3s ease-in-out infinite; }
+
+        /* Main content */
+        .main-content {
+            position: relative;
+            z-index: 10;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .title {
+            font-size: 4rem;
+            font-weight: bold;
+            color: var(--cartoon-orange);
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.3);
+            margin: 40px 0;
+            animation: bounce-fun 2s ease-in-out infinite;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            color: #d97706;
+            font-weight: bold;
+            margin-bottom: 40px;
+        }
+
+        /* Button styles */
+        .btn-cartoon {
+            background: linear-gradient(135deg, #ff6b9d 0%, #4facfe 50%, #00f260 100%);
+            border: 3px solid #ffffff;
+            border-radius: 25px;
+            color: white;
+            font-weight: bold;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            margin: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .btn-cartoon:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            background: linear-gradient(135deg, #ff8fab 0%, #6bb6ff 50%, #33f26f 100%);
+        }
+
+        .btn-orange { background: var(--cartoon-orange); }
+        .btn-pink { background: var(--cartoon-pink); }
+        .btn-yellow { background: var(--cartoon-yellow); color: #333; }
+        .btn-purple { background: var(--cartoon-purple); }
+        .btn-blue { background: var(--cartoon-blue); }
+        .btn-green { background: var(--cartoon-green); }
+
+        /* Feature cards */
+        .feature-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 60px auto;
+            max-width: 1200px;
+            padding: 0 20px;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            border: 4px solid;
+            border-image: linear-gradient(45deg, #ff6b9d, #4facfe, #00f260, #ffd93d) 1;
+            border-radius: 25px;
+            padding: 30px;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .feature-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .feature-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .feature-desc {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        /* Pricing section */
+        .pricing-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 40px;
+            margin: 60px auto;
+            max-width: 900px;
+            padding: 0 20px;
+        }
+
+        .pricing-card {
+            background: white;
+            border: 4px solid;
+            border-radius: 25px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .premium-badge {
+            background: linear-gradient(135deg, #ffd700, #ffed4e);
+            color: #1f2937;
+            border: 2px solid #fbbf24;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: pulse-rainbow 3s ease-in-out infinite;
+        }
+
+        .price {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .price-free { color: var(--cartoon-blue); }
+        .price-premium { color: var(--cartoon-pink); }
+
+        .features-list {
+            list-style: none;
+            padding: 0;
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .features-list li {
+            margin: 15px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        .features-list li:before {
+            content: "✅";
+            position: absolute;
+            left: 0;
+            font-size: 1.2rem;
+        }
+
+        /* Pages */
+        .page {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .login-container {
+            max-width: 500px;
+            margin: 50px auto;
+            background: white;
+            border-radius: 25px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: 4px solid var(--cartoon-pink);
+        }
+
+        .login-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .form-group {
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            border: 3px solid #ddd;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--cartoon-blue);
+        }
+
+        .demo-info {
+            background: #e0f2fe;
+            border: 3px solid var(--cartoon-blue);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .back-btn {
+            background: #6b7280;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .back-btn:hover {
+            background: #4b5563;
+        }
+
+        /* Dashboard */
+        .dashboard-nav {
+            background: white;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border-radius: 15px;
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .nav-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--cartoon-orange);
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 30px auto;
+            max-width: 1200px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            border: 4px solid;
+        }
+
+        .stat-card.completed { border-color: var(--cartoon-green); }
+        .stat-card.pending { border-color: var(--cartoon-yellow); }
+        .stat-card.earnings { border-color: var(--cartoon-green); }
+        .stat-card.children { border-color: var(--cartoon-purple); }
+
+        .stat-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .upgrade-banner {
+            background: linear-gradient(135deg, #f3e8ff, #fce7f3);
+            border: 4px dashed var(--cartoon-purple);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            margin: 30px auto;
+            max-width: 800px;
+            animation: pulse-rainbow 3s ease-in-out infinite;
+        }
+
+        .chore-limit-warning {
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+            border: 4px solid #f59e0b;
+            color: #92400e;
+            border-radius: 20px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        /* Child Dashboard Styles */
+        .child-dashboard {
+            background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 50%, #f3e8ff 100%);
+            min-height: 100vh;
+        }
+
+        .child-title {
+            font-size: 3rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--cartoon-blue), var(--cartoon-purple));
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        .progress-card {
+            background: linear-gradient(135deg, #dcfce7, #dbeafe);
+            border: 4px solid var(--cartoon-green);
+            border-radius: 25px;
+            padding: 30px;
+            margin: 30px auto;
+            max-width: 800px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, var(--cartoon-green), var(--cartoon-blue));
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
+
+        .earnings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .earnings-card {
+            background: white;
+            border: 4px solid;
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .chores-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 40px auto;
+            max-width: 1200px;
+        }
+
+        .chore-category {
+            border: 4px solid;
+            border-radius: 25px;
+            padding: 25px;
+            background: white;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+        }
+
+        .chore-category.daily { border-color: var(--cartoon-yellow); }
+        .chore-category.weekly { border-color: var(--cartoon-pink); }
+        .chore-category.continuous { border-color: var(--cartoon-blue); }
+
+        .chore-category-header {
+            background: var(--cartoon-yellow);
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+            margin: -25px -25px 20px -25px;
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .chore-category.weekly .chore-category-header {
+            background: var(--cartoon-pink);
+        }
+
+        .chore-category.continuous .chore-category-header {
+            background: var(--cartoon-blue);
+        }
+
+        .chore-item {
+            background: #f8fafc;
+            border: 3px solid #e5e7eb;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .chore-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .chore-item.completed {
+            border-color: var(--cartoon-green);
+            background: #f0fdf4;
+        }
+
+        .chore-checkbox {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #d1d5db;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .chore-checkbox.completed {
+            background: var(--cartoon-green);
+            border-color: var(--cartoon-green);
+            color: white;
+            font-weight: bold;
+        }
+
+        .chore-checkbox:hover {
+            transform: scale(1.1);
+        }
+
+        .chore-details {
+            flex: 1;
+        }
+
+        .chore-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .chore-category-tag {
+            background: var(--cartoon-blue);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .chore-amount {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--cartoon-green);
+        }
+
+        .achievements-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .achievement-card {
+            background: white;
+            border: 4px solid #e5e7eb;
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .achievement-card.unlocked {
+            border-color: var(--cartoon-yellow);
+            background: linear-gradient(135deg, #fef3c7, #fde68a);
+        }
+
+        .achievement-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 1.5rem;
+        }
+
+        .achievement-card.unlocked .achievement-icon {
+            background: var(--cartoon-yellow);
+            color: white;
+        }
+
+        .achievement-card:not(.unlocked) .achievement-icon {
+            background: #e5e7eb;
+            color: #9ca3af;
+        }
+
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+            }
+            
+            .child-title {
+                font-size: 2rem;
+            }
+            
+            .feature-container,
+            .pricing-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .chores-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Floating background icons -->
+    <div class="floating-icon animate-bounce-fun">☀️</div>
+    <div class="floating-icon">⭐</div>
+    <div class="floating-icon animate-wiggle">🎯</div>
+    <div class="floating-icon">🌸</div>
+    <div class="floating-icon">✨</div>
+    <div class="floating-icon animate-wiggle">🏆</div>
+
+    <!-- Landing Page -->
+    <div id="landing-page" class="page active">
+        <div class="main-content">
+            <h1 class="title">🦁 Family Chore Tracker 🌺</h1>
+            <p class="subtitle">
+                Make family chores fun and rewarding! Track progress, earn money, and build responsibility together! ⚙️
+            </p>
+
+            <!-- Action buttons -->
+            <div style="margin: 40px 0;">
+                <button class="btn-cartoon btn-orange animate-pulse-rainbow" onclick="showPage('signup-page')">
+                    ⚙️ 🦁 Create Parent Account
+                </button>
+                <span style="font-size: 1.5rem; font-weight: bold; color: #d97706; margin: 0 20px;">or</span>
+                <button class="btn-cartoon btn-pink" onclick="showPage('login-page')">
+                    🎯 ⭐ Parent Sign In
+                </button>
+                <span style="font-size: 1.5rem; font-weight: bold; color: #d97706; margin: 0 20px;">or</span>
+                <button class="btn-cartoon btn-yellow animate-wiggle" onclick="showPage('child-login-page')">
+                    ⚙️ 🌺 Child Sign In
+                </button>
+            </div>
+
+            <!-- Feature cards -->
+            <div class="feature-container">
+                <div class="feature-card">
+                    <span class="feature-icon animate-bounce-fun">👨‍👩‍👧‍👦</span>
+                    <h3 class="feature-title">🦁 Family Management</h3>
+                    <p class="feature-desc">
+                        Separate dashboards for parents and children with age-appropriate interfaces!
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon animate-wiggle">🌟</span>
+                    <h3 class="feature-title">🌟 Smart Assignment</h3>
+                    <p class="feature-desc">
+                        Automatic weekly chore distribution that prevents duplicates and repetition!
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">🏆</span>
+                    <h3 class="feature-title">🏆 Earn Rewards</h3>
+                    <p class="feature-desc">
+                        Children earn money for completed chores with automatic weekly earnings calculation!
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon animate-pulse-rainbow">📊</span>
+                    <h3 class="feature-title">📊 Progress Tracking</h3>
+                    <p class="feature-desc">
+                        Visual progress indicators and detailed weekly reports for the whole family!
+                    </p>
+                </div>
+            </div>
+
+            <!-- Pricing section -->
+            <h2 style="font-size: 3rem; font-weight: bold; color: var(--cartoon-orange); margin: 60px 0 40px 0;" class="animate-bounce-fun">
+                🎯 Choose Your Adventure! 🎯
+            </h2>
+
+            <div class="pricing-container">
+                <!-- Free Plan -->
+                <div class="pricing-card" style="border-color: var(--cartoon-blue);">
+                    <h3 style="font-size: 2rem; font-weight: bold; color: var(--cartoon-blue); margin-bottom: 20px;">
+                        🌟 Free Plan
+                    </h3>
+                    <div class="price price-free">$0<span style="font-size: 1.2rem;">/month</span></div>
+                    <ul class="features-list">
+                        <li>Up to 10 chores</li>
+                        <li>Basic parent-child dashboard</li>
+                        <li>Weekly view & tracking</li>
+                        <li>Simple completion tracking</li>
+                        <li>5 email notifications/month</li>
+                    </ul>
+                    <button class="btn-cartoon" style="background: var(--cartoon-blue); width: 100%;" onclick="showPage('signup-page')">
+                        🌟 Start Free Adventure! 🌟
+                    </button>
+                </div>
+
+                <!-- Premium Plan -->
+                <div class="pricing-card" style="border-color: var(--cartoon-pink);">
+                    <div class="premium-badge">🏆 MOST POPULAR! 🏆</div>
+                    <h3 style="font-size: 2rem; font-weight: bold; color: var(--cartoon-pink); margin-bottom: 20px; margin-top: 20px;">
+                        ✨ Premium Plan
+                    </h3>
+                    <div class="price price-premium">$7.99<span style="font-size: 1.2rem;">/month</span></div>
+                    <ul class="features-list">
+                        <li>Unlimited chores & family members</li>
+                        <li>Advanced scheduling & recurring chores</li>
+                        <li>Reward system with points & allowances</li>
+                        <li>Detailed analytics & reports</li>
+                        <li>Custom categories & templates</li>
+                        <li>Family sharing (multiple parents)</li>
+                        <li>Priority support & unlimited notifications</li>
+                    </ul>
+                    <button class="btn-cartoon" style="background: var(--cartoon-pink); width: 100%;" onclick="upgradeModal()">
+                        ✨ Upgrade to Premium Magic! ✨
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parent Signup Page -->
+    <div id="signup-page" class="page">
+        <div class="main-content">
+            <button class="back-btn" onclick="showPage('landing-page')">← Back to main page</button>
+            
+            <div class="login-container" style="border-color: var(--cartoon-orange);">
+                <div style="text-align: center;">
+                    <div class="login-icon animate-bounce-fun">🦁</div>
+                    <h1 style="font-size: 2.5rem; font-weight: bold; color: var(--cartoon-orange); margin-bottom: 10px;">
+                        Create Parent Account
+                    </h1>
+                    <p style="color: #d97706; font-size: 1.2rem; margin-bottom: 30px;">
+                        Start your family's chore adventure today!
+                    </p>
+                </div>
+
+                <form onsubmit="handleSignup(event)">
+                    <div class="form-group">
+                        <label>Family Name</label>
+                        <input type="text" placeholder="Enter your family name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Parent Email</label>
+                        <input type="email" placeholder="Enter your email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Create Password</label>
+                        <input type="password" placeholder="Create a secure password" required>
+                    </div>
+
+                    <button type="submit" class="btn-cartoon" style="background: var(--cartoon-orange); width: 100%; margin-top: 20px;">
+                        🌟 Create Free Account! 🌟
+                    </button>
+                </form>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <p style="margin-bottom: 10px;">Already have an account?</p>
+                    <button class="btn-cartoon" style="background: var(--cartoon-pink);" onclick="showPage('login-page')">
+                        Sign in here!
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parent Login Page -->
+    <div id="login-page" class="page">
+        <div class="main-content">
+            <button class="back-btn" onclick="showPage('landing-page')">← Back to main page</button>
+            
+            <div class="login-container" style="border-color: var(--cartoon-pink);">
+                <div style="text-align: center;">
+                    <div class="login-icon">⭐</div>
+                    <h1 style="font-size: 2.5rem; font-weight: bold; color: var(--cartoon-pink); margin-bottom: 10px;">
+                        Parent Sign In
+                    </h1>
+                    <p style="color: #be185d; font-size: 1.2rem; margin-bottom: 30px;">
+                        Welcome back to your family dashboard!
+                    </p>
+                </div>
+
+                <form onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" id="email" placeholder="Enter your email" value="demo@family.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="password" placeholder="Enter your password" value="demo123" required>
+                    </div>
+
+                    <button type="submit" class="btn-cartoon" style="background: var(--cartoon-pink); width: 100%; margin-top: 20px;">
+                        ⭐ Sign In to Dashboard! ⭐
+                    </button>
+                </form>
+
+                <div class="demo-info">
+                    <h4 style="font-weight: bold; color: var(--cartoon-blue); margin-bottom: 10px;">🎯 Demo Login</h4>
+                    <p style="margin-bottom: 10px;">Try the demo with these credentials:</p>
+                    <p style="font-weight: bold;">
+                        📧 Email: demo@family.com<br>
+                        🔐 Password: demo123
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Child Login Page -->
+    <div id="child-login-page" class="page">
+        <div class="main-content">
+            <button class="back-btn" onclick="showPage('landing-page')">← Back to main page</button>
+            
+            <div class="login-container" style="border-color: var(--cartoon-yellow);">
+                <div style="text-align: center;">
+                    <div class="login-icon animate-wiggle">🌺</div>
+                    <h1 style="font-size: 2.5rem; font-weight: bold; color: var(--cartoon-yellow); margin-bottom: 10px;">
+                        Child Sign In
+                    </h1>
+                    <p style="color: #d97706; font-size: 1.2rem; margin-bottom: 30px;">
+                        Ready to complete your chores and earn rewards?
+                    </p>
+                </div>
+
+                <form onsubmit="handleChildLogin(event)">
+                    <div class="form-group">
+                        <label>Your Name</label>
+                        <input type="text" id="child-name" placeholder="Enter your name" value="Alex" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Your Password</label>
+                        <input type="password" id="child-password" placeholder="Enter your password" value="kid123" required>
+                    </div>
+
+                    <button type="submit" class="btn-cartoon" style="background: var(--cartoon-yellow); color: #333; width: 100%; margin-top: 20px;">
+                        🌺 Start Your Chores! 🌺
+                    </button>
+                </form>
+
+                <div class="demo-info">
+                    <h4 style="font-weight: bold; color: var(--cartoon-blue); margin-bottom: 10px;">🎯 Demo Child Login</h4>
+                    <p style="margin-bottom: 10px;">Try the demo with these credentials:</p>
+                    <p style="font-weight: bold;">
+                        👦 Name: Alex<br>
+                        🔐 Password: kid123
+                    </p>
+                </div>
+
+                <div style="text-align: center; margin-top: 20px; color: #d97706;">
+                    <p>Ask your parents to help you sign in!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parent Dashboard -->
+    <div id="dashboard-page" class="page">
+        <div class="dashboard-nav">
+            <div class="nav-content">
+                <div>
+                    <span class="nav-title animate-bounce-fun">🏆 Family Chore Tracker</span>
+                    <span class="premium-badge" style="margin-left: 20px; display: none;" id="premium-badge">
+                        ✨ PREMIUM ✨
+                    </span>
+                </div>
+                <div class="nav-actions">
+                    <span style="font-size: 1.2rem; font-weight: bold; color: #d97706;">Welcome, Demo Parent! 🎉</span>
+                    <button class="btn-cartoon btn-purple animate-pulse-rainbow" onclick="upgradeModal()" id="upgrade-btn">
+                        ✨ Upgrade to Premium! ✨
+                    </button>
+                    <button class="btn-cartoon" style="background: #6b7280;" onclick="logout()">
+                        🚪 Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Chore Limit Warning -->
+            <div class="chore-limit-warning animate-wiggle" id="chore-warning">
+                <h3 style="font-weight: bold; margin-bottom: 10px;">⚠️ Approaching Chore Limit! ⚠️</h3>
+                <p style="margin-bottom: 15px;">
+                    You're using 10/10 chores in your free plan. 🚀 Upgrade to add unlimited chores!
+                </p>
+                <button class="btn-cartoon btn-purple" onclick="upgradeModal()">
+                    🚀 Upgrade Now!
+                </button>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="stats-grid">
+                <div class="stat-card completed">
+                    <span class="stat-icon animate-bounce-fun">✅</span>
+                    <div class="stat-number" style="color: var(--cartoon-green);">12</div>
+                    <div class="stat-label">Completed This Week</div>
+                </div>
+
+                <div class="stat-card pending">
+                    <span class="stat-icon animate-wiggle">⏰</span>
+                    <div class="stat-number" style="color: #d97706;">8</div>
+                    <div class="stat-label">Pending Chores</div>
+                </div>
+
+                <div class="stat-card earnings">
+                    <span class="stat-icon">💰</span>
+                    <div class="stat-number" style="color: var(--cartoon-green);">$47.50</div>
+                    <div class="stat-label">Total Earnings</div>
+                </div>
+
+                <div class="stat-card children">
+                    <span class="stat-icon animate-pulse-rainbow">👥</span>
+                    <div class="stat-number" style="color: var(--cartoon-purple);">2</div>
+                    <div class="stat-label">Active Children</div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 40px auto; max-width: 1000px;">
+                <button class="feature-card" style="background: #fee2e2; border-color: #dc2626; color: #7f1d1d; cursor: not-allowed; opacity: 0.7;" onclick="showUpgradeModal()">
+                    <span style="font-size: 3rem; margin-bottom: 15px; display: block;">➕</span>
+                    <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;">Add New Chore</div>
+                    <div style="font-size: 1rem;">(10/10 used - Upgrade needed!)</div>
+                </button>
+                
+                <button class="feature-card" style="background: #fef3c7; border-color: var(--cartoon-orange);" onclick="addChild()">
+                    <span style="font-size: 3rem; margin-bottom: 15px; display: block; animation: wiggle 2s ease-in-out infinite;">👶</span>
+                    <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;">Add Child</div>
+                    <div style="font-size: 1rem;">New family member</div>
+                </button>
+                
+                <button class="feature-card" style="background: #dbeafe; border-color: var(--cartoon-blue);" onclick="weeklySchedule()">
+                    <span style="font-size: 3rem; margin-bottom: 15px; display: block;">📅</span>
+                    <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;">Weekly Schedule</div>
+                    <div style="font-size: 1rem;">Plan the week</div>
+                </button>
+                
+                <button class="feature-card" style="background: #dcfce7; border-color: var(--cartoon-green);" onclick="generateReport()">
+                    <span style="font-size: 3rem; margin-bottom: 15px; display: block;" class="animate-pulse-rainbow">📊</span>
+                    <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;">Generate Report</div>
+                    <div style="font-size: 1rem;">Family progress</div>
+                </button>
+            </div>
+
+            <!-- Premium Features Preview -->
+            <div class="upgrade-banner">
+                <h3 style="font-size: 2.5rem; font-weight: bold; color: var(--cartoon-purple); margin-bottom: 20px;" class="animate-bounce-fun">
+                    🌟 Unlock Premium Magic! 🌟
+                </h3>
+                <p style="font-size: 1.3rem; color: #7c2d92; margin-bottom: 30px; font-weight: bold;">
+                    Get unlimited chores, advanced scheduling, reward systems, and detailed analytics!
+                </p>
+                <button class="btn-cartoon" style="background: var(--cartoon-purple); font-size: 1.3rem;" onclick="showUpgradeModal()">
+                    ✨ Upgrade Now - $7.99/month! ✨
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Child Dashboard -->
+    <div id="child-dashboard-page" class="page child-dashboard">
+        <div class="dashboard-nav">
+            <div class="nav-content">
+                <div>
+                    <span class="nav-title animate-bounce-fun">🌟 My Chore Adventure</span>
+                </div>
+                <div class="nav-actions">
+                    <span style="font-size: 1.2rem; font-weight: bold; color: var(--cartoon-blue);" id="child-welcome">Hi Alex! 👋</span>
+                    <button class="btn-cartoon btn-blue" onclick="toggleEarnings()">
+                        <span id="earnings-toggle-text">👁️ Hide Earnings</span>
+                    </button>
+                    <button class="btn-cartoon" style="background: #6b7280;" onclick="logout()">
+                        🚪 Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 class="child-title animate-bounce-fun" id="child-title">Hi Alex! 👋</h1>
+                <p style="font-size: 1.3rem; color: #6b7280;">Ready to tackle your chores and earn some money?</p>
+            </div>
+
+            <!-- Progress Overview -->
+            <div class="progress-card">
+                <div style="text-align: center;">
+                    <h2 style="font-size: 2rem; font-weight: bold; color: var(--cartoon-green); margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 15px;">
+                        <span>🏆</span>
+                        <span>Your Progress Today</span>
+                        <span>🏆</span>
+                    </h2>
+                    
+                    <div style="font-size: 4rem; font-weight: bold; color: var(--cartoon-green); margin-bottom: 10px;" id="progress-fraction">
+                        2/4
+                    </div>
+                    <div style="font-size: 1.3rem; color: #6b7280; margin-bottom: 20px;">Chores Completed</div>
+                    
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill" style="width: 50%;"></div>
+                    </div>
+                    <p style="color: #6b7280; margin-top: 10px;" id="progress-percent">50% Complete</p>
+                </div>
+
+                <!-- Earnings Display -->
+                <div class="earnings-grid" id="earnings-display">
+                    <div class="earnings-card animate-bounce-fun" style="border-color: var(--cartoon-blue);">
+                        <div style="font-size: 2.5rem; margin-bottom: 10px;">💰</div>
+                        <p style="font-size: 0.9rem; font-weight: bold; color: var(--cartoon-blue); margin-bottom: 10px;">Today</p>
+                        <p style="font-size: 2rem; font-weight: bold; color: var(--cartoon-blue);" id="today-earnings">$7.50</p>
+                    </div>
+                    <div class="earnings-card animate-bounce-fun" style="border-color: var(--cartoon-green); animation-delay: 0.2s;">
+                        <div style="font-size: 2.5rem; margin-bottom: 10px;">🏆</div>
+                        <p style="font-size: 0.9rem; font-weight: bold; color: var(--cartoon-green); margin-bottom: 10px;">This Week</p>
+                        <p style="font-size: 2rem; font-weight: bold; color: var(--cartoon-green);" id="week-earnings">$12.50</p>
+                    </div>
+                    <div class="earnings-card animate-bounce-fun" style="border-color: var(--cartoon-pink); animation-delay: 0.4s;">
+                        <div style="font-size: 2.5rem; margin-bottom: 10px;">🗓️</div>
+                        <p style="font-size: 0.9rem; font-weight: bold; color: var(--cartoon-pink); margin-bottom: 10px;">All Time</p>
+                        <p style="font-size: 2rem; font-weight: bold; color: var(--cartoon-pink);" id="total-earnings">$45.00</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chores Display -->
+            <div class="chores-grid">
+                <!-- Daily Chores -->
+                <div class="chore-category daily">
+                    <div class="chore-category-header animate-bounce-fun">
+                        <span>🌞 Today's Daily Fun! 🌞</span>
+                    </div>
+                    <div id="daily-chores">
+                        <div class="chore-item completed" data-chore-id="1">
+                            <div class="chore-checkbox completed" onclick="toggleChore(1)">✓</div>
+                            <div class="chore-details">
+                                <div class="chore-name">Clean Bedroom</div>
+                                <div class="chore-category-tag">daily</div>
+                            </div>
+                            <div class="chore-amount">$5.00</div>
+                        </div>
+                        <div class="chore-item" data-chore-id="2">
+                            <div class="chore-checkbox" onclick="toggleChore(2)"></div>
+                            <div class="chore-details">
+                                <div class="chore-name">Feed Dog</div>
+                                <div class="chore-category-tag">daily</div>
+                            </div>
+                            <div class="chore-amount">$2.50</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weekly Chores -->
+                <div class="chore-category weekly">
+                    <div class="chore-category-header animate-wiggle">
+                        <span>📅 Weekly Adventures! 📅</span>
+                    </div>
+                    <div id="weekly-chores">
+                        <div class="chore-item completed" data-chore-id="3">
+                            <div class="chore-checkbox completed" onclick="toggleChore(3)">✓</div>
+                            <div class="chore-details">
+                                <div class="chore-name">Take Out Trash</div>
+                                <div class="chore-category-tag">weekly</div>
+                            </div>
+                            <div class="chore-amount">$7.50</div>
+                        </div>
+                        <div class="chore-item" data-chore-id="4">
+                            <div class="chore-checkbox" onclick="toggleChore(4)"></div>
+                            <div class="chore-details">
+                                <div class="chore-name">Vacuum Living Room</div>
+                                <div class="chore-category-tag">weekly</div>
+                            </div>
+                            <div class="chore-amount">$10.00</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Continuous Chores -->
+                <div class="chore-category continuous">
+                    <div class="chore-category-header animate-float">
+                        <span>🔄 Ongoing Tasks! 🔄</span>
+                    </div>
+                    <div id="continuous-chores">
+                        <div style="text-align: center; padding: 40px; color: #6b7280;">
+                            <div style="font-size: 4rem; margin-bottom: 15px;">🎈</div>
+                            <p style="font-size: 1.2rem; font-weight: bold;">No ongoing tasks yet!</p>
+                            <p>Ready for new adventures!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Achievements Section -->
+            <div class="feature-card" style="margin: 40px auto; max-width: 1000px;">
+                <h2 style="font-size: 2rem; font-weight: bold; color: var(--cartoon-orange); margin-bottom: 30px; text-align: center;">
+                    🏆 Your Achievements 🏆
+                </h2>
+                
+                <div class="achievements-grid">
+                    <div class="achievement-card unlocked">
+                        <div class="achievement-icon">⭐</div>
+                        <p style="font-size: 1rem; font-weight: bold; margin-bottom: 5px;">Star Performer</p>
+                        <p style="font-size: 0.8rem; color: #6b7280;">3+ chores done</p>
+                    </div>
+
+                    <div class="achievement-card">
+                        <div class="achievement-icon">🏆</div>
+                        <p style="font-size: 1rem; font-weight: bold; margin-bottom: 5px;">All Complete</p>
+                        <p style="font-size: 0.8rem; color: #6b7280;">100% done</p>
+                    </div>
+
+                    <div class="achievement-card">
+                        <div class="achievement-icon">💰</div>
+                        <p style="font-size: 1rem; font-weight: bold; margin-bottom: 5px;">Money Maker</p>
+                        <p style="font-size: 0.8rem; color: #6b7280;">$10+ earned</p>
+                    </div>
+
+                    <div class="achievement-card">
+                        <div class="achievement-icon">✨</div>
+                        <p style="font-size: 1rem; font-weight: bold; margin-bottom: 5px;">Super Helper</p>
+                        <p style="font-size: 0.8rem; color: #6b7280;">5+ chores done</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Current user state
+        let currentUser = null;
+        let isPremium = false;
+        let showEarnings = true;
+        
+        // Demo data for child dashboard
+        let choreData = {
+            1: { id: 1, name: 'Clean Bedroom', category: 'daily', amount: 5.00, completed: true },
+            2: { id: 2, name: 'Feed Dog', category: 'daily', amount: 2.50, completed: false },
+            3: { id: 3, name: 'Take Out Trash', category: 'weekly', amount: 7.50, completed: true },
+            4: { id: 4, name: 'Vacuum Living Room', category: 'weekly', amount: 10.00, completed: false }
+        };
+
+        // Show different pages
+        function showPage(pageId) {
+            // Hide all pages
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(page => page.classList.remove('active'));
+            
+            // Show selected page
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        // Handle signup form
+        function handleSignup(event) {
+            event.preventDefault();
+            alert('🎉 Account created successfully! In a real app, this would create your account and send a confirmation email.');
+            showPage('login-page');
+        }
+
+        // Handle login form
+        function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (email === 'demo@family.com' && password === 'demo123') {
+                currentUser = {
+                    name: 'Demo Parent',
+                    email: email,
+                    subscription: 'free'
+                };
+                
+                alert('🎉 Welcome back! Redirecting to your dashboard...');
+                showPage('dashboard-page');
+                
+                // Update dashboard for free user
+                updateDashboardForUser();
+            } else {
+                alert('❌ Invalid credentials! Please use:\nEmail: demo@family.com\nPassword: demo123');
+            }
+        }
+
+        // Handle child login
+        function handleChildLogin(event) {
+            event.preventDefault();
+            const name = document.getElementById('child-name').value;
+            const password = document.getElementById('child-password').value;
+            
+            if (name.toLowerCase() === 'alex' && password === 'kid123') {
+                currentUser = {
+                    name: name,
+                    type: 'child'
+                };
+                
+                alert('🌺 Welcome ' + name + '! Let\'s check out your chores!');
+                showPage('child-dashboard-page');
+                updateChildDashboard(name);
+            } else {
+                alert('❌ Invalid credentials! Please use:\nName: Alex\nPassword: kid123');
+            }
+        }
+
+        // Update child dashboard
+        function updateChildDashboard(childName) {
+            document.getElementById('child-welcome').textContent = `Hi ${childName}! 👋`;
+            document.getElementById('child-title').textContent = `Hi ${childName}! 👋`;
+            updateProgressDisplay();
+        }
+
+        // Toggle chore completion
+        function toggleChore(choreId) {
+            const chore = choreData[choreId];
+            if (!chore) return;
+            
+            chore.completed = !chore.completed;
+            
+            // Update UI
+            const choreItem = document.querySelector(`[data-chore-id="${choreId}"]`);
+            const checkbox = choreItem.querySelector('.chore-checkbox');
+            
+            if (chore.completed) {
+                choreItem.classList.add('completed');
+                checkbox.classList.add('completed');
+                checkbox.textContent = '✓';
+                
+                // Celebration animation
+                showChoreCompletion(chore);
+            } else {
+                choreItem.classList.remove('completed');
+                checkbox.classList.remove('completed');
+                checkbox.textContent = '';
+            }
+            
+            updateProgressDisplay();
+            updateAchievements();
+        }
+
+        // Show chore completion celebration
+        function showChoreCompletion(chore) {
+            // Create celebration element
+            const celebration = document.createElement('div');
+            celebration.innerHTML = `
+                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+                            background: linear-gradient(135deg, #ffd700, #ffed4e); 
+                            border: 4px solid #f59e0b; border-radius: 25px; 
+                            padding: 30px; text-align: center; z-index: 1000;
+                            animation: bounce-fun 0.5s ease-in-out;">
+                    <div style="font-size: 4rem; margin-bottom: 15px;">🎉</div>
+                    <h3 style="font-size: 1.5rem; font-weight: bold; color: #92400e; margin-bottom: 10px;">
+                        Great Job!
+                    </h3>
+                    <p style="font-size: 1.2rem; color: #d97706; margin-bottom: 15px;">
+                        You completed: ${chore.name}
+                    </p>
+                    <p style="font-size: 1.4rem; font-weight: bold; color: #16a34a;">
+                        +${chore.amount.toFixed(2)} earned! 💰
+                    </p>
+                </div>
+            `;
+            
+            document.body.appendChild(celebration);
+            
+            // Remove after 2 seconds
+            setTimeout(() => {
+                document.body.removeChild(celebration);
+            }, 2000);
+        }
+
+        // Update progress display
+        function updateProgressDisplay() {
+            const completed = Object.values(choreData).filter(c => c.completed).length;
+            const total = Object.values(choreData).length;
+            const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+            
+            document.getElementById('progress-fraction').textContent = `${completed}/${total}`;
+            document.getElementById('progress-fill').style.width = `${percent}%`;
+            document.getElementById('progress-percent').textContent = `${percent}% Complete`;
+            
+            // Update earnings
+            if (showEarnings) {
+                const todayEarnings = Object.values(choreData)
+                    .filter(c => c.completed)
+                    .reduce((sum, c) => sum + c.amount, 0);
+                
+                document.getElementById('today-earnings').textContent = `${todayEarnings.toFixed(2)}`;
+                document.getElementById('week-earnings').textContent = `${(todayEarnings * 1.5).toFixed(2)}`;
+                document.getElementById('total-earnings').textContent = `${(todayEarnings * 6).toFixed(2)}`;
+            }
+        }
+
+        // Update achievements
+        function updateAchievements() {
+            const completed = Object.values(choreData).filter(c => c.completed).length;
+            const todayEarnings = Object.values(choreData)
+                .filter(c => c.completed)
+                .reduce((sum, c) => sum + c.amount, 0);
+            
+            const achievements = document.querySelectorAll('.achievement-card');
+            
+            // Star Performer (3+ chores)
+            if (completed >= 3) {
+                achievements[0].classList.add('unlocked');
+            } else {
+                achievements[0].classList.remove('unlocked');
+            }
+            
+            // All Complete (100%)
+            if (completed === Object.values(choreData).length) {
+                achievements[1].classList.add('unlocked');
+            } else {
+                achievements[1].classList.remove('unlocked');
+            }
+            
+            // Money Maker ($10+)
+            if (todayEarnings >= 10) {
+                achievements[2].classList.add('unlocked');
+            } else {
+                achievements[2].classList.remove('unlocked');
+            }
+            
+            // Super Helper (5+)
+            if (completed >= 5) {
+                achievements[3].classList.add('unlocked');
+            } else {
+                achievements[3].classList.remove('unlocked');
+            }
+        }
+
+        // Toggle earnings display
+        function toggleEarnings() {
+            showEarnings = !showEarnings;
+            const earningsDisplay = document.getElementById('earnings-display');
+            const toggleText = document.getElementById('earnings-toggle-text');
+            
+            if (showEarnings) {
+                earningsDisplay.style.display = 'grid';
+                toggleText.textContent = '👁️ Hide Earnings';
+            } else {
+                earningsDisplay.style.display = 'none';
+                toggleText.textContent = '👁️ Show Earnings';
+            }
+        }
+
+        // Update dashboard based on user subscription
+        function updateDashboardForUser() {
+            const premiumBadge = document.getElementById('premium-badge');
+            const upgradeBtn = document.getElementById('upgrade-btn');
+            const choreWarning = document.getElementById('chore-warning');
+            
+            if (currentUser && currentUser.subscription === 'premium') {
+                isPremium = true;
+                premiumBadge.style.display = 'inline-block';
+                upgradeBtn.style.display = 'none';
+                choreWarning.style.display = 'none';
+            } else {
+                isPremium = false;
+                premiumBadge.style.display = 'none';
+                upgradeBtn.style.display = 'inline-block';
+                choreWarning.style.display = 'block';
+            }
+        }
+
+        // Parent dashboard button functions
+        function addChild() {
+            alert('🎉 Add Child feature coming soon! In a real app, this would open a form to add a new child to your family account.');
+        }
+
+        function weeklySchedule() {
+            alert('📅 Weekly Schedule feature coming soon! In a real app, this would show a calendar view where you can assign chores for the entire week.');
+        }
+
+        function generateReport() {
+            alert('📊 Generate Report feature coming soon! In a real app, this would create detailed analytics about your family\'s chore completion and earnings.');
+        }
+
+        // Show upgrade modal
+        function showUpgradeModal() {
+            alert('✨ UPGRADE TO PREMIUM MAGIC! ✨\n\n🚀 In a real app, this would redirect to Stripe checkout for $7.99/month!\n\n✨ Premium features include:\n• Unlimited chores\n• Advanced scheduling\n• Reward systems\n• Detailed analytics\n• Family sharing\n• Priority support');
+        }
+
+        // Alternative upgrade function name
+        function upgradeModal() {
+            showUpgradeModal();
+        }
+
+        // Logout function
+        function logout() {
+            currentUser = null;
+            isPremium = false;
+            showEarnings = true;
+            alert('👋 You have been logged out successfully!');
+            showPage('landing-page');
+        }
+
+        // Initialize the app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Start on landing page
+            showPage('landing-page');
+            
+            // Initialize child dashboard progress
+            updateProgressDisplay();
+            updateAchievements();
+        });
+    </script>
+</body>
+</html>
