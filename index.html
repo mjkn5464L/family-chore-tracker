@@ -1254,7 +1254,11 @@
                 
                 alert('🎉 Welcome back to the demo! Redirecting to your dashboard...');
                 showPage('dashboard-page');
-                updateDashboardForUser();
+                
+                // Small delay to ensure page elements are loaded
+                setTimeout(() => {
+                    updateDashboardForUser();
+                }, 100);
                 return;
             }
             
