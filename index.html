@@ -1840,7 +1840,7 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label>Daily Chores per Week *</label>
-                            <input type="number" id="child-daily-count" min="0" max="7" placeholder="0-7" required>
+                            <input type="number" id="child-daily-count" min="0" max="10" placeholder="0-10" required>
                             <small style="color: #6b7280;">How many daily chores to assign automatically</small>
                         </div>
                         <div class="form-group">
@@ -1855,8 +1855,9 @@
                             <label>Login Credentials</label>
                             <div class="form-row">
                                 <div class="form-group">
-                                    <label>Username (auto-generated)</label>
-                                    <input type="text" id="child-username" readonly style="background: #f3f4f6;">
+                                    <label>Username *</label>
+                                    <input type="text" id="child-username" placeholder="Enter unique username" required>
+                                    <small style="color: #6b7280;">Choose a unique username for your child</small>
                                 </div>
                                 <div class="form-group">
                                     <label>Password *</label>
@@ -2262,8 +2263,6 @@
             } else if (pageId === 'child-management-page') {
                 loadStoredChildren();
                 loadStoredChores(); // Also load chores for assignment
-                // Auto-update username as user types
-                document.getElementById('child-form-name').addEventListener('input', updateUsername);
             }
         }
 
@@ -2384,7 +2383,7 @@
         // Handle child login
         function handleChildLogin(event) {
             event.preventDefault();
-            const username = document.getElementById('child-name').value.toLowerCase().replace(/\s+/g, '');
+            const username = document.getElementById('child-name').value.toLowerCase().trim();
             const password = document.getElementById('child-password').value;
             
             // Check demo account first
@@ -2423,7 +2422,7 @@
                 showPage('child-dashboard-page');
                 updateChildDashboardFromProfile(child);
             } else {
-                alert('❌ Invalid credentials! Please check your username and password, or use the demo account:\nUsername: Alex\nPassword: kid123');
+                alert('❌ Invalid credentials! Please check your username and password, or use the demo account:\\nUsername: alex\\nPassword: kid123');
             }
         }
 
@@ -3086,18 +3085,6 @@
             localStorage.setItem('familyChildren', JSON.stringify(children));
         }
 
-        // Generate username from name
-        function generateUsername(name) {
-            return name.toLowerCase().replace(/\s+/g, '');
-        }
-
-        // Update username when name changes
-        function updateUsername() {
-            const name = document.getElementById('child-form-name').value;
-            const username = generateUsername(name);
-            document.getElementById('child-username').value = username;
-        }
-
         // Preview uploaded image
         function previewImage(input) {
             const preview = document.getElementById('image-preview');
@@ -3143,17 +3130,18 @@
             const maxDifficulty = selectedChildDifficulty;
             const dailyCount = parseInt(document.getElementById('child-daily-count').value);
             const weeklyCount = parseInt(document.getElementById('child-weekly-count').value);
+            const username = document.getElementById('child-username').value.toLowerCase().trim();
             const password = document.getElementById('child-login-password').value;
             const pictureFile = document.getElementById('child-picture').files[0];
             
             // Validation
-            if (!name || !maxDifficulty || !password) {
+            if (!name || !maxDifficulty || !username || !password) {
                 alert('❌ Please fill in all required fields!');
                 return;
             }
             
-            if (dailyCount < 0 || dailyCount > 7) {
-                alert('❌ Daily chores must be between 0-7!');
+            if (dailyCount < 0 || dailyCount > 10) {
+                alert('❌ Daily chores must be between 0-10!');
                 return;
             }
             
@@ -3163,9 +3151,14 @@
             }
             
             // Check if username already exists
-            const username = generateUsername(name);
             if (children.some(child => child.username === username)) {
-                alert('❌ A child with this name already exists!');
+                alert('❌ Username already taken! Please choose a different username.');
+                return;
+            }
+            
+            // Check if username is valid (alphanumeric only)
+            if (!/^[a-zA-Z0-9]+$/.test(username)) {
+                alert('❌ Username can only contain letters and numbers!');
                 return;
             }
             
@@ -3315,7 +3308,6 @@
                 star.classList.remove('active')
             );
             document.getElementById('image-preview').innerHTML = '';
-            document.getElementById('child-username').value = '';
         }
 
         // Render children list
