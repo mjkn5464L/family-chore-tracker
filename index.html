@@ -1,307 +1,4 @@
-// Open child profile modal
-        function openChildProfile(childId) {
-            const child = children.find(c => c.id === childId);
-            if (!child) return;
-            
-            currentChildProfile = child;
-            document.getElementById('modal-child-name').textContent = `${child.name}'s Profile`;
-            
-            const completedCount = child.assignedChores.filter(c => c.completed).length;
-            const totalCount = child.assignedChores.length;
-            const todayEarnings = child.assignedChores
-                .filter(c => c.completed)
-                .reduce((sum, c) => sum + c.amount, 0);
-            
-            // Calculate earnings for different periods (mock data for now)
-            const weekEarnings = todayEarnings * 1.5;
-            const monthEarnings = todayEarnings * 6;
-            const yearEarnings = todayEarnings * 52;
-            
-            document.getElementById('child-profile-content').innerHTML = `
-                <!-- Child Header Info -->
-                <div class="child-header" style="margin-bottom: 30px;">
-                    <div class="child-avatar">
-                        ${child.picture ? 
-                            `<img src="${child.picture}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` :
-                            child.name.charAt(0).toUpperCase()
-                        }
-                    </div>
-                    <div class="child-info">
-                        <div class="child-name">${child.name}</div>
-                        <div class="child-details">
-                            ${child.age ? `Age: ${child.age} • ` : ''}Username: <strong>${child.username}</strong><br>
-                            Max Difficulty: ${child.maxDifficulty}⭐ • Auto-assigns: ${child.dailyChoresCount} daily, ${child.weeklyChoresCount} weekly
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Earnings Timeline -->
-                <h3 style="color: var(--cartoon-green); margin-bottom: 15px;">💰 Earnings Overview</h3>
-                <div class="earnings-timeline">
-                    <div class="timeline-item">
-                        <div class="timeline-value">${todayEarnings.toFixed(2)}</div>
-                        <div class="timeline-label">Today</div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-value">${weekEarnings.toFixed(2)}</div>
-                        <div class="timeline-label">This Week</div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-value">${monthEarnings.toFixed(2)}</div>
-                        <div class="timeline-label">This Month</div>
-                    </div>
-                    <div class="timeline-item">
-                        <div class="timeline-value">${yearEarnings.toFixed(2)}</div>
-                        <div class="timeline-label">This Year</div>
-                    </div>
-                </div>
-                
-                <!-- Current Assigned Chores -->
-                <div class="assigned-chores">
-                    <h3 style="color: var(--cartoon-blue); margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-                        📋 Assigned Chores (${completedCount}/${totalCount} completed)
-                        <button class="btn-cartoon btn-green btn-small" onclick="addManualChore(${child.id})">
-                            ➕ Add Manual Chore
-                        </button>
-                    </h3>
-                    
-                    ${child.assignedChores.length === 0 ? 
-                        '<p style="text-align: center; color: #666; padding: 20px;">No chores assigned yet.</p>' :
-                        child.assignedChores.map(chore => `
-                            <div class="chore-assignment-item ${chore.completed ? 'completed' : ''}">
-                                <div class="chore-status-toggle ${chore.completed ? 'completed' : ''}" 
-                                     onclick="toggleChildChore(${child.id}, ${chore.assignedId})">
-                                    ${chore.completed ? '✓' : ''}
-                                </div>
-                                <div class="chore-assignment-details">
-                                    <div class="chore-assignment-name">${chore.title}</div>
-                                    <div class="chore-assignment-meta">
-                                        <span>${chore.category}</span>
-                                        <span>${chore.amount.toFixed(2)}</span>
-                                        <span>${chore.difficulty}⭐</span>
-                                    </div>
-                                </div>
-                                <div class="chore-assignment-actions">
-                                    <button class="btn-cartoon btn-blue btn-small" onclick="replaceChore(${child.id}, ${chore.assignedId})">
-                                        🔄 Replace
-                                    </button>
-                                    <button class="btn-cartoon btn-red btn-small" onclick="removeChore(${child.id}, ${chore.assignedId})">
-                                        ❌ Remove
-                                    </button>
-                                </div>
-                            </div>
-                        `).join('')
-                    }
-                </div>
-                
-                <!-- Quick Actions -->
-                <div style="display: flex; gap: 15px; margin-top: 30px; justify-content: center; flex-wrap: wrap;">
-                    <button class="btn-cartoon btn-orange" onclick="editChildSettings(${child.id})">
-                        ⚙️ Edit Settings
-                    </button>
-                    <button class="btn-cartoon btn-purple" onclick="viewChildHistory(${child.id})">
-                        📊 View History
-                    </button>
-                    <button class="btn-cartoon btn-green" onclick="reassignChores(${child.id})">
-                        🔄 Reassign All Chores
-                    </button>
-                </div>
-            `;
-            
-            document.getElementById('child-profile-modal').style.display = 'block';
-        }
-
-        // Close child profile modal
-        function closeChildProfile() {
-            document.getElementById('child-profile-modal').style.display = 'none';
-            currentChildProfile = null;
-        }
-
-        // Toggle chore completion for a child
-        function toggleChildChore(childId, assignedId) {
-            const child = children.find(c => c.id === childId);
-            if (!child) return;
-            
-            const chore = child.assignedChores.find(c => c.assignedId === assignedId);
-            if (!chore) return;
-            
-            chore.completed = !chore.completed;
-            
-            // Update earnings
-            updateChildEarnings(child);
-            
-            // Save changes
-            saveFamilyChildren();
-            
-            // Refresh displays
-            renderChildrenList();
-            if (currentChildProfile && currentChildProfile.id === childId) {
-                openChildProfile(childId); // Refresh modal
-            }
-            
-            // Show completion message
-            if (chore.completed) {
-                alert(`🎉 Great! ${child.name} completed "${chore.title}" and earned ${chore.amount.toFixed(2)}!`);
-            }
-        }
-
-        // Update child earnings
-        function updateChildEarnings(child) {
-            const completed = child.assignedChores.filter(c => c.completed);
-            child.earnings.today = completed.reduce((sum, c) => sum + c.amount, 0);
-            // In a real app, you'd track weekly/monthly/yearly separately
-        }
-
-        // Add manual chore to child
-        function addManualChore(childId) {
-            const child = children.find(c => c.id === childId);
-            if (!child) return;
-            
-            if (masterChores.length === 0) {
-                alert('❌ No chores available in master list! Please create some chores first.');
-                return;
-            }
-            
-            const availableChores = masterChores.filter(chore => 
-                chore.difficulty <= child.maxDifficulty &&
-                !child.assignedChores.some(assigned => assigned.id === chore.id)
-            );
-            
-            if (availableChores.length === 0) {
-                alert('❌ No suitable chores available for this child!');
-                return;
-            }
-            
-            // Create selection dialog
-            const choreOptions = availableChores.map(chore => 
-                `${chore.title} (${chore.category}, ${chore.amount.toFixed(2)}, ${chore.difficulty}⭐)`
-            ).join('\n');
-            
-            const selection = prompt(`Select a chore to add to ${child.name}:\n\n${choreOptions}\n\nEnter the chore title:`);
-            
-            if (selection) {
-                const selectedChore = availableChores.find(chore => 
-                    chore.title.toLowerCase().includes(selection.toLowerCase())
-                );
-                
-                if (selectedChore) {
-                    child.assignedChores.push({
-                        ...selectedChore,
-                        assignedId: Date.now(),
-                        completed: false,
-                        assignedDate: new Date().toISOString(),
-                        manual: true
-                    });
-                    
-                    saveFamilyChildren();
-                    renderChildrenList();
-                    openChildProfile(childId); // Refresh modal
-                    
-                    alert(`✅ Added "${selectedChore.title}" to ${child.name}'s chores!`);
-                } else {
-                    alert('❌ Chore not found! Please try again.');
-                }
-            }
-        }
-
-        // Replace assigned chore
-        function replaceChore(childId, assignedId) {
-            const child = children.find(c => c.id === childId);
-            if (!child) return;
-            
-            const currentChore = child.assignedChores.find(c => c.assignedId === assignedId);
-            if (!currentChore) return;
-            
-            const availableChores = masterChores.filter(chore => 
-                chore.difficulty <= child.maxDifficulty &&
-                chore.category === currentChore.category &&
-                !child.assignedChores.some(assigned => assigned.id === chore.id)
-            );
-            
-            if (availableChores.length === 0) {
-                alert('❌ No suitable replacement chores available!');
-                return;
-            }
-            
-            // Random replacement
-            const randomChore = availableChores[Math.floor(Math.random() * availableChores.length)];
-            
-            // Replace the chore
-            const choreIndex = child.assignedChores.findIndex(c => c.assignedId === assignedId);
-            child.assignedChores[choreIndex] = {
-                ...randomChore,
-                assignedId: assignedId,
-                completed: false,
-                assignedDate: new Date().toISOString()
-            };
-            
-            saveFamilyChildren();
-            renderChildrenList();
-            openChildProfile(childId); // Refresh modal
-            
-            alert(`🔄 Replaced "${currentChore.title}" with "${randomChore.title}"!`);
-        }
-
-        // Remove assigned chore
-        function removeChore(childId, assignedId) {
-            const child = children.find(c => c.id === childId);
-            if (!child) return;
-            
-            const chore = child.assignedChores.find(c => c.assignedId === assignedId);
-            if (!chore) return;
-            
-            if (confirm(`Remove "${chore.title}" from ${child.name}'s chores?`)) {
-                child.assignedChores = child.assignedChores.filter(c => c.assignedId !== assignedId);
-                
-                saveFamilyChildren();
-                renderChildrenList();
-                openChildProfile(childId); // Refresh modal
-                
-                alert(`✅ Removed "${chore.title}" from ${child.name}'s chores.`);
-            }
-        }
-
-        // Reassign chores for a child
-        function reassignChores(childId) {
-            const child = children.find(c => c.id === childId);
-            if (!child) return;
-            
-            if (confirm(`Reassign all chores for ${child.name}? This will replace their current chores.`)) {
-                assignChores(child);
-                saveFamilyChildren();
-                renderChildrenList();
-                
-                if (currentChildProfile && currentChildProfile.id === childId) {
-                    openChildProfile(childId); // Refresh modal
-                }
-                
-                alert(`🔄 Successfully reassigned chores for ${child.name}!`);
-            }
-        }
-
-        // Delete child
-        function deleteChild(childId) {
-            const child = children.find(c => c.id === childId);
-            if (!child) return;
-            
-            if (confirm(`Are you sure you want to remove ${child.name} from your family? This cannot be undone.`)) {
-                children = children.filter(c => c.id !== childId);
-                saveFamilyChildren();
-                renderChildrenList();
-                
-                alert(`✅ ${child.name} has been removed from your family.`);
-            }
-        }
-
-        // Edit child settings (placeholder)
-        function editChildSettings(childId) {
-            alert('⚙️ Edit Settings feature coming soon! This would allow you to modify the child\'s difficulty level, chore counts, and login credentials.');
-        }
-
-        // View child history (placeholder)
-        function viewChildHistory(childId) {
-            alert('📊 History feature coming soon! This would show detailed completion history, earnings over time, and performance statistics.');
-        }<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -511,75 +208,6 @@
             font-size: 0.9rem;
         }
 
-        /* Pricing section */
-        .pricing-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 40px;
-            margin: 60px auto;
-            max-width: 900px;
-            padding: 0 20px;
-        }
-
-        .pricing-card {
-            background: white;
-            border: 4px solid;
-            border-radius: 25px;
-            padding: 40px;
-            text-align: center;
-            transition: all 0.3s ease;
-            position: relative;
-        }
-
-        .pricing-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-        }
-
-        .premium-badge {
-            background: linear-gradient(135deg, #ffd700, #ffed4e);
-            color: #1f2937;
-            border: 2px solid #fbbf24;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-            font-weight: bold;
-            position: absolute;
-            top: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            animation: pulse-rainbow 3s ease-in-out infinite;
-        }
-
-        .price {
-            font-size: 3rem;
-            font-weight: bold;
-            margin: 20px 0;
-        }
-
-        .price-free { color: var(--cartoon-blue); }
-        .price-premium { color: var(--cartoon-pink); }
-
-        .features-list {
-            list-style: none;
-            padding: 0;
-            margin: 30px 0;
-            text-align: left;
-        }
-
-        .features-list li {
-            margin: 15px 0;
-            padding-left: 30px;
-            position: relative;
-        }
-
-        .features-list li:before {
-            content: "✅";
-            position: absolute;
-            left: 0;
-            font-size: 1.2rem;
-        }
-
         /* Pages */
         .page {
             display: none;
@@ -601,12 +229,6 @@
             border: 4px solid var(--cartoon-pink);
         }
 
-        .login-icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            animation: float 3s ease-in-out infinite;
-        }
-
         .form-group {
             margin: 20px 0;
             text-align: left;
@@ -619,22 +241,16 @@
             color: #333;
         }
 
-        .form-group input, .form-group textarea, .form-group select {
+        .form-group input {
             width: 100%;
             padding: 15px;
             border: 3px solid #ddd;
             border-radius: 15px;
             font-size: 1.1rem;
             box-sizing: border-box;
-            font-family: inherit;
         }
 
-        .form-group textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-
-        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+        .form-group input:focus {
             outline: none;
             border-color: var(--cartoon-blue);
         }
@@ -690,735 +306,10 @@
             align-items: center;
         }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin: 30px auto;
-            max-width: 1200px;
-        }
-
-        .stat-card {
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            text-align: center;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            border: 4px solid;
-        }
-
-        .stat-card.completed { border-color: var(--cartoon-green); }
-        .stat-card.pending { border-color: var(--cartoon-yellow); }
-        .stat-card.earnings { border-color: var(--cartoon-green); }
-        .stat-card.children { border-color: var(--cartoon-purple); }
-
-        .stat-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            display: block;
-        }
-
-        .stat-number {
-            font-size: 3rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        .stat-label {
-            color: #666;
-            font-size: 1.1rem;
-        }
-
-        .upgrade-banner {
-            background: linear-gradient(135deg, #f3e8ff, #fce7f3);
-            border: 4px dashed var(--cartoon-purple);
-            border-radius: 20px;
-            padding: 30px;
-            text-align: center;
-            margin: 30px auto;
-            max-width: 800px;
-            animation: pulse-rainbow 3s ease-in-out infinite;
-        }
-
-        .chore-limit-warning {
-            background: linear-gradient(135deg, #fef3c7, #fde68a);
-            border: 4px solid #f59e0b;
-            color: #92400e;
-            border-radius: 20px;
-            padding: 20px;
-            margin: 20px auto;
-            max-width: 800px;
-            text-align: center;
-        }
-
-        /* Child Dashboard Styles */
-        .child-dashboard {
-            background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 50%, #f3e8ff 100%);
-            min-height: 100vh;
-        }
-
-        .child-title {
-            font-size: 3rem;
-            font-weight: bold;
-            background: linear-gradient(135deg, var(--cartoon-blue), var(--cartoon-purple));
-            background-clip: text;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 20px;
-        }
-
-        .progress-card {
-            background: linear-gradient(135deg, #dcfce7, #dbeafe);
-            border: 4px solid var(--cartoon-green);
-            border-radius: 25px;
-            padding: 30px;
-            margin: 30px auto;
-            max-width: 800px;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 20px;
-            background: #e5e7eb;
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 20px 0;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(135deg, var(--cartoon-green), var(--cartoon-blue));
-            transition: width 0.3s ease;
-            border-radius: 10px;
-        }
-
-        .earnings-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin: 30px 0;
-        }
-
-        .earnings-card {
-            background: white;
-            border: 4px solid;
-            border-radius: 20px;
-            padding: 25px;
-            text-align: center;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-        }
-
-        .chores-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 30px;
-            margin: 40px auto;
-            max-width: 1200px;
-        }
-
-        .chore-category {
-            border: 4px solid;
-            border-radius: 25px;
-            padding: 25px;
-            background: white;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
-        }
-
-        .chore-category.daily { border-color: var(--cartoon-yellow); }
-        .chore-category.weekly { border-color: var(--cartoon-pink); }
-        .chore-category.continuous { border-color: var(--cartoon-blue); }
-
-        .chore-category-header {
-            background: var(--cartoon-yellow);
-            color: white;
-            padding: 15px;
-            border-radius: 15px;
-            margin: -25px -25px 20px -25px;
-            text-align: center;
-            font-size: 1.3rem;
-            font-weight: bold;
-        }
-
-        .chore-category.weekly .chore-category-header {
-            background: var(--cartoon-pink);
-        }
-
-        .chore-category.continuous .chore-category-header {
-            background: var(--cartoon-blue);
-        }
-
-        .chore-item {
-            background: #f8fafc;
-            border: 3px solid #e5e7eb;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 15px 0;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            transition: all 0.3s ease;
-        }
-
-        .chore-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .chore-item.completed {
-            border-color: var(--cartoon-green);
-            background: #f0fdf4;
-        }
-
-        .chore-checkbox {
-            width: 30px;
-            height: 30px;
-            border: 3px solid #d1d5db;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .chore-checkbox.completed {
-            background: var(--cartoon-green);
-            border-color: var(--cartoon-green);
-            color: white;
-            font-weight: bold;
-        }
-
-        .chore-checkbox:hover {
-            transform: scale(1.1);
-        }
-
-        .chore-details {
-            flex: 1;
-        }
-
-        .chore-name {
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .chore-category-tag {
-            background: var(--cartoon-blue);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 10px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-
-        .chore-amount {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--cartoon-green);
-        }
-
-        .achievements-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin: 30px 0;
-        }
-
-        .achievement-card {
-            background: white;
-            border: 4px solid #e5e7eb;
-            border-radius: 20px;
-            padding: 25px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .achievement-card.unlocked {
-            border-color: var(--cartoon-yellow);
-            background: linear-gradient(135deg, #fef3c7, #fde68a);
-        }
-
-        .achievement-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 15px;
-            font-size: 1.5rem;
-        }
-
-        .achievement-card.unlocked .achievement-icon {
-            background: var(--cartoon-yellow);
-            color: white;
-        }
-
-        .achievement-card:not(.unlocked) .achievement-icon {
-            background: #e5e7eb;
-            color: #9ca3af;
-        }
-
-        /* Child Management Styles */
-        .child-management-container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .child-form-container {
-            background: white;
-            border-radius: 25px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            border: 4px solid var(--cartoon-orange);
-            margin-bottom: 40px;
-        }
-
-        .child-profile-card {
-            background: white;
-            border-radius: 20px;
-            padding: 25px;
-            margin: 15px 0;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-            border: 4px solid var(--cartoon-blue);
-            transition: all 0.3s ease;
-        }
-
-        .child-profile-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
-        }
-
-        .child-header {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .child-avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            border: 4px solid var(--cartoon-blue);
-            object-fit: cover;
-            background: linear-gradient(135deg, var(--cartoon-blue), var(--cartoon-purple));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            color: white;
-        }
-
-        .child-info {
-            flex: 1;
-        }
-
-        .child-name {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 5px;
-        }
-
-        .child-details {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .child-actions {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        .child-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .child-stat {
-            background: #f8fafc;
-            border: 2px solid #e5e7eb;
-            border-radius: 15px;
-            padding: 15px;
-            text-align: center;
-        }
-
-        .child-stat.earnings { border-color: var(--cartoon-green); }
-        .child-stat.completed { border-color: var(--cartoon-blue); }
-        .child-stat.pending { border-color: var(--cartoon-yellow); }
-
-        .stat-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .stat-label {
-            color: #666;
-            font-size: 0.8rem;
-        }
-
-        .earnings-timeline {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .timeline-item {
-            background: linear-gradient(135deg, #dcfce7, #bbf7d0);
-            border: 3px solid var(--cartoon-green);
-            border-radius: 15px;
-            padding: 15px;
-            text-align: center;
-        }
-
-        .timeline-value {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: var(--cartoon-green);
-            margin-bottom: 5px;
-        }
-
-        .timeline-label {
-            color: #16a34a;
-            font-size: 0.9rem;
-            font-weight: bold;
-        }
-
-        .assigned-chores {
-            background: #f8fafc;
-            border: 3px solid #e5e7eb;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-
-        .chore-assignment-item {
-            background: white;
-            border: 2px solid #e5e7eb;
-            border-radius: 10px;
-            padding: 15px;
-            margin: 10px 0;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            transition: all 0.3s ease;
-        }
-
-        .chore-assignment-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .chore-assignment-item.completed {
-            border-color: var(--cartoon-green);
-            background: #f0fdf4;
-        }
-
-        .chore-status-toggle {
-            width: 25px;
-            height: 25px;
-            border: 2px solid #d1d5db;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-
-        .chore-status-toggle.completed {
-            background: var(--cartoon-green);
-            border-color: var(--cartoon-green);
-            color: white;
-        }
-
-        .chore-assignment-details {
-            flex: 1;
-        }
-
-        .chore-assignment-name {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .chore-assignment-meta {
-            display: flex;
-            gap: 10px;
-            font-size: 0.8rem;
-            color: #666;
-        }
-
-        .chore-assignment-actions {
-            display: flex;
-            gap: 5px;
-        }
-
-        .file-input-wrapper {
-            position: relative;
-            display: inline-block;
-            cursor: pointer;
-        }
-
-        .file-input-wrapper input[type=file] {
-            position: absolute;
-            opacity: 0;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
-
-        .file-input-button {
-            background: var(--cartoon-blue);
-            color: white;
-            padding: 10px 20px;
-            border-radius: 15px;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.3s ease;
-        }
-
-        .file-input-button:hover {
-            background: #0ea5e9;
-            transform: translateY(-2px);
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-
-        .modal-content {
-            background-color: white;
-            margin: 5% auto;
-            padding: 30px;
-            border-radius: 25px;
-            width: 90%;
-            max-width: 600px;
-            max-height: 80vh;
-            overflow-y: auto;
-            border: 4px solid var(--cartoon-purple);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .modal-title {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: var(--cartoon-purple);
-        }
-
-        .close-modal {
-            background: none;
-            border: none;
-            font-size: 2rem;
-            cursor: pointer;
-            color: #666;
-        }
-
-        .close-modal:hover {
-            color: var(--cartoon-red);
-        }
-        .chore-management-container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .chore-form-container {
-            background: white;
-            border-radius: 25px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            border: 4px solid var(--cartoon-blue);
-            margin-bottom: 40px;
-        }
-
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .form-row.single {
-            grid-template-columns: 1fr;
-        }
-
-        .difficulty-selector {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .difficulty-star {
-            width: 40px;
-            height: 40px;
-            border: 3px solid #ddd;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 1.5rem;
-            transition: all 0.3s ease;
-        }
-
-        .difficulty-star.active {
-            background: var(--cartoon-yellow);
-            border-color: var(--cartoon-yellow);
-            color: white;
-        }
-
-        .difficulty-star:hover {
-            transform: scale(1.1);
-        }
-
-        .days-selector {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .day-button {
-            padding: 10px;
-            border: 3px solid #ddd;
-            border-radius: 15px;
-            background: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        .day-button.active {
-            background: var(--cartoon-blue);
-            border-color: var(--cartoon-blue);
-            color: white;
-        }
-
-        .day-button:hover {
-            transform: translateY(-2px);
-        }
-
-        .master-chore-list {
-            background: white;
-            border-radius: 25px;
-            padding: 30px;
-            box-shadow: 0 15px 30px rgba(0,0,0,0.1);
-            border: 4px solid var(--cartoon-green);
-        }
-
-        .chore-list-item {
-            background: #f8fafc;
-            border: 3px solid #e5e7eb;
-            border-radius: 15px;
-            padding: 20px;
-            margin: 15px 0;
-            transition: all 0.3s ease;
-        }
-
-        .chore-list-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .chore-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        .chore-title {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .chore-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        .chore-meta {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-        }
-
-        .chore-meta span {
-            background: #e5e7eb;
-            color: #6b7280;
-            padding: 5px 10px;
-            border-radius: 10px;
-            font-size: 0.9rem;
-            font-weight: bold;
-        }
-
-        .chore-meta .amount {
-            background: var(--cartoon-green);
-            color: white;
-        }
-
-        .chore-meta .difficulty {
-            background: var(--cartoon-yellow);
-            color: white;
-        }
-
-        .chore-meta .category {
-            background: var(--cartoon-blue);
-            color: white;
-        }
-
-        .chore-description {
-            color: #666;
-            line-height: 1.5;
-            margin-bottom: 10px;
-        }
-
-        .chore-schedule {
-            font-size: 0.9rem;
-            color: #6b7280;
-            font-style: italic;
-        }
-
         .btn-small {
             padding: 8px 16px;
             font-size: 0.9rem;
             margin: 0;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: #6b7280;
-        }
-
-        .empty-state .icon {
-            font-size: 4rem;
-            margin-bottom: 20px;
-            display: block;
         }
 
         @media (max-width: 768px) {
@@ -1426,35 +317,14 @@
                 font-size: 2.5rem;
             }
             
-            .child-title {
-                font-size: 2rem;
-            }
-            
-            .feature-container,
-            .pricing-container {
+            .feature-container {
                 grid-template-columns: 1fr;
+                gap: 15px;
             }
             
             .nav-content {
                 flex-direction: column;
                 gap: 15px;
-            }
-
-            .chores-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .form-row {
-                grid-template-columns: 1fr;
-            }
-
-            .days-selector {
-                grid-template-columns: repeat(4, 1fr);
-            }
-
-            .chore-meta {
-                flex-direction: column;
-                gap: 10px;
             }
         }
     </style>
@@ -1495,7 +365,31 @@
             <div class="feature-container">
                 <div class="feature-card">
                     <span class="feature-icon animate-bounce-fun">👨‍👩‍👧‍👦</span>
-                    <h3 class="feature-title">🦁 Family Management</h3>
+                    <h3 class="feature-title">Family Management</h3>
+                    <p class="feature-desc">
+                        Separate dashboards for parents and children with age-appropriate interfaces!
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon animate-wiggle">🌟</span>
+                    <h3 class="feature-title">Smart Assignment</h3>
+                    <p class="feature-desc">
+                        Automatic weekly chore distribution that prevents duplicates and repetition!
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon">🏆</span>
+                    <h3 class="feature-title">Earn Rewards</h3>
+                    <p class="feature-desc">
+                        Children earn money for completed chores with automatic weekly earnings calculation!
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <span class="feature-icon animate-pulse-rainbow">📊</span>
+                    <h3 class="feature-title">Progress Tracking</h3>
                     <p class="feature-desc">
                         Visual progress indicators and detailed weekly reports for the whole family!
                     </p>
@@ -1507,19 +401,19 @@
                 🎯 Choose Your Adventure! 🎯
             </h2>
 
-            <div class="pricing-container">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 40px; margin: 60px auto; max-width: 900px; padding: 0 20px;">
                 <!-- Free Plan -->
-                <div class="pricing-card" style="border-color: var(--cartoon-blue);">
+                <div style="background: white; border: 4px solid var(--cartoon-blue); border-radius: 25px; padding: 40px; text-align: center; transition: all 0.3s ease;">
                     <h3 style="font-size: 2rem; font-weight: bold; color: var(--cartoon-blue); margin-bottom: 20px;">
                         🌟 Free Plan
                     </h3>
-                    <div class="price price-free">$0<span style="font-size: 1.2rem;">/month</span></div>
-                    <ul class="features-list">
-                        <li>Up to 10 chores</li>
-                        <li>Basic parent-child dashboard</li>
-                        <li>Weekly view & tracking</li>
-                        <li>Simple completion tracking</li>
-                        <li>5 email notifications/month</li>
+                    <div style="font-size: 3rem; font-weight: bold; margin: 20px 0; color: var(--cartoon-blue);">$0<span style="font-size: 1.2rem;">/month</span></div>
+                    <ul style="list-style: none; padding: 0; margin: 30px 0; text-align: left;">
+                        <li style="margin: 15px 0; padding-left: 30px; position: relative;">Up to 10 chores</li>
+                        <li style="margin: 15px 0; padding-left: 30px; position: relative;">Basic parent-child dashboard</li>
+                        <li style="margin: 15px 0; padding-left: 30px; position: relative;">Weekly view & tracking</li>
+                        <li style="margin: 15px 0; padding-left: 30px; position: relative;">Simple completion tracking</li>
+                        <li style="margin: 15px 0; padding-left: 30px; position: relative;">5 email notifications/month</li>
                     </ul>
                     <button class="btn-cartoon" style="background: var(--cartoon-blue); width: 100%;" onclick="showPage('signup-page')">
                         🌟 Start Free Adventure! 🌟
@@ -1527,20 +421,20 @@
                 </div>
 
                 <!-- Premium Plan -->
-                <div class="pricing-card" style="border-color: var(--cartoon-pink);">
-                    <div class="premium-badge">🏆 MOST POPULAR! 🏆</div>
+                <div style="background: white; border: 4px solid var(--cartoon-pink); border-radius: 25px; padding: 40px; text-align: center; transition: all 0.3s ease; position: relative;">
+                    <div style="background: linear-gradient(135deg, #ffd700, #ffed4e); color: #1f2937; border: 2px solid #fbbf24; padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; position: absolute; top: -15px; left: 50%; transform: translateX(-50%);">🏆 MOST POPULAR! 🏆</div>
                     <h3 style="font-size: 2rem; font-weight: bold; color: var(--cartoon-pink); margin-bottom: 20px; margin-top: 20px;">
                         ✨ Premium Plan
                     </h3>
-                    <div class="price price-premium">$7.99<span style="font-size: 1.2rem;">/month</span></div>
-                    <ul class="features-list">
-                        <li>Unlimited chores & family members</li>
-                        <li>Advanced scheduling & recurring chores</li>
-                        <li>Reward system with points & allowances</li>
-                        <li>Detailed analytics & reports</li>
-                        <li>Custom categories & templates</li>
-                        <li>Family sharing (multiple parents)</li>
-                        <li>Priority support & unlimited notifications</li>
+                    <div style="font-size: 3rem; font-weight: bold; margin: 20px 0; color: var(--cartoon-pink);">$7.99<span style="font-size: 1.2rem;">/month</span></div>
+                    <ul style="list-style: none; padding: 0; margin: 30px 0; text-align: left;">
+                        <li style="margin: 15px 0; padding-left: 30px; position: relative;">Unlimited chores & family members</li>
+                        <li style="margin: 15px 0; padding-left: 30px; position: relative;">Advanced scheduling & recurring chores</li>
+                        <li style="margin: 15px 0; padding-left: 30px; position: relative;">Reward system with points & allowances</li>
+                        <li style="margin: 15px 0; padding-left: 30px; position: relative;">Detailed analytics & reports</li>
+                        <li style="margin: 15px 0; padding-left: 30px; position: relative;">Custom categories & templates</li>
+                        <li style="margin: 15px 0; padding-left: 30px; position: relative;">Family sharing (multiple parents)</li>
+                        <li style="margin: 15px 0; padding-left: 30px; position: relative;">Priority support & unlimited notifications</li>
                     </ul>
                     <button class="btn-cartoon" style="background: var(--cartoon-pink); width: 100%;" onclick="upgradeModal()">
                         ✨ Upgrade to Premium Magic! ✨
@@ -1557,7 +451,7 @@
             
             <div class="login-container" style="border-color: var(--cartoon-orange);">
                 <div style="text-align: center;">
-                    <div class="login-icon animate-bounce-fun">🦁</div>
+                    <div style="font-size: 4rem; margin-bottom: 20px; animation: bounce-fun 2s ease-in-out infinite;">🦁</div>
                     <h1 style="font-size: 2.5rem; font-weight: bold; color: var(--cartoon-orange); margin-bottom: 10px;">
                         Create Parent Account
                     </h1>
@@ -1602,7 +496,7 @@
             
             <div class="login-container" style="border-color: var(--cartoon-pink);">
                 <div style="text-align: center;">
-                    <div class="login-icon">⭐</div>
+                    <div style="font-size: 4rem; margin-bottom: 20px;">⭐</div>
                     <h1 style="font-size: 2.5rem; font-weight: bold; color: var(--cartoon-pink); margin-bottom: 10px;">
                         Parent Sign In
                     </h1>
@@ -1645,7 +539,7 @@
             
             <div class="login-container" style="border-color: var(--cartoon-yellow);">
                 <div style="text-align: center;">
-                    <div class="login-icon animate-wiggle">🌺</div>
+                    <div style="font-size: 4rem; margin-bottom: 20px; animation: wiggle 2s ease-in-out infinite;">🌺</div>
                     <h1 style="font-size: 2.5rem; font-weight: bold; color: var(--cartoon-yellow); margin-bottom: 10px;">
                         Child Sign In
                     </h1>
@@ -1656,8 +550,8 @@
 
                 <form onsubmit="handleChildLogin(event)">
                     <div class="form-group">
-                        <label>Your Name</label>
-                        <input type="text" id="child-name" placeholder="Enter your name" value="Alex" required>
+                        <label>Your Username</label>
+                        <input type="text" id="child-name" placeholder="Enter your username" value="alex" required>
                     </div>
                     <div class="form-group">
                         <label>Your Password</label>
@@ -1673,7 +567,7 @@
                     <h4 style="font-weight: bold; color: var(--cartoon-blue); margin-bottom: 10px;">🎯 Demo Child Login</h4>
                     <p style="margin-bottom: 10px;">Try the demo with these credentials:</p>
                     <p style="font-weight: bold;">
-                        👦 Name: Alex<br>
+                        👦 Username: alex<br>
                         🔐 Password: kid123
                     </p>
                 </div>
@@ -1691,14 +585,11 @@
             <div class="nav-content">
                 <div>
                     <span class="nav-title animate-bounce-fun">🏆 Family Chore Tracker</span>
-                    <span class="premium-badge" style="margin-left: 20px; display: none;" id="premium-badge">
-                        ✨ PREMIUM ✨
-                    </span>
                 </div>
                 <div class="nav-actions">
                     <span style="font-size: 1.2rem; font-weight: bold; color: #d97706;" id="welcome-message">Welcome, Demo Parent! 🎉</span>
-                    <button class="btn-cartoon btn-purple animate-pulse-rainbow" onclick="upgradeModal()" id="upgrade-btn">
-                        ✨ Upgrade to Premium! ✨
+                    <button class="btn-cartoon btn-blue" onclick="showPage('child-management-page')">
+                        👶 Manage Children
                     </button>
                     <button class="btn-cartoon" style="background: #6b7280;" onclick="logout()">
                         🚪 Logout
@@ -1708,71 +599,447 @@
         </div>
 
         <div class="main-content">
-            <!-- Quick Stats -->
-            <div class="stats-grid">
-                <div class="stat-card completed">
-                    <span class="stat-icon animate-bounce-fun">✅</span>
-                    <div class="stat-number" style="color: var(--cartoon-green);" id="completed-count">12</div>
-                    <div class="stat-label">Completed This Week</div>
-                </div>
+            <h2 style="text-align: center; font-size: 2rem; color: var(--cartoon-orange); margin-bottom: 30px;">
+                👶 Add Your First Child! 👶
+            </h2>
+            
+            <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 25px; padding: 40px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); border: 4px solid var(--cartoon-orange);">
+                <form id="child-form" onsubmit="handleAddChild(event)">
+                    <div class="form-group">
+                        <label>Child's Name *</label>
+                        <input type="text" id="child-form-name" placeholder="Enter child's name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Age (Optional)</label>
+                        <input type="number" id="child-age" min="3" max="18" placeholder="Age">
+                    </div>
 
-                <div class="stat-card pending">
-                    <span class="stat-icon animate-wiggle">⏰</span>
-                    <div class="stat-number" style="color: #d97706;" id="pending-count">8</div>
-                    <div class="stat-label">Pending Chores</div>
-                </div>
+                    <div class="form-group">
+                        <label>Username *</label>
+                        <input type="text" id="child-username" placeholder="Enter unique username" required>
+                        <small style="color: #6b7280;">Choose a unique username for your child</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Password *</label>
+                        <input type="text" id="child-login-password" placeholder="Create password for child" required>
+                        <small style="color: #6b7280;">Child will use this to log in</small>
+                    </div>
 
-                <div class="stat-card earnings">
-                    <span class="stat-icon">💰</span>
-                    <div class="stat-number" style="color: var(--cartoon-green);" id="total-earnings">$47.50</div>
-                    <div class="stat-label">Total Earnings</div>
-                </div>
+                    <div class="form-group">
+                        <label>Max Chore Difficulty *</label>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;" id="child-difficulty-selector">
+                            <div style="width: 40px; height: 40px; border: 3px solid #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.5rem; transition: all 0.3s ease;" data-level="1" onclick="setChildDifficulty(1)">⭐</div>
+                            <div style="width: 40px; height: 40px; border: 3px solid #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.5rem; transition: all 0.3s ease;" data-level="2" onclick="setChildDifficulty(2)">⭐</div>
+                            <div style="width: 40px; height: 40px; border: 3px solid #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.5rem; transition: all 0.3s ease;" data-level="3" onclick="setChildDifficulty(3)">⭐</div>
+                            <div style="width: 40px; height: 40px; border: 3px solid #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.5rem; transition: all 0.3s ease;" data-level="4" onclick="setChildDifficulty(4)">⭐</div>
+                            <div style="width: 40px; height: 40px; border: 3px solid #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.5rem; transition: all 0.3s ease;" data-level="5" onclick="setChildDifficulty(5)">⭐</div>
+                        </div>
+                        <small style="color: #6b7280;">1 = Very Easy, 5 = Very Hard</small>
+                        <input type="hidden" id="child-max-difficulty" required>
+                    </div>
 
-                <div class="stat-card children">
-                    <span class="stat-icon animate-pulse-rainbow">👥</span>
-                    <div class="stat-number" style="color: var(--cartoon-purple);" id="children-count">2</div>
-                    <div class="stat-label">Active Children</div>
-                </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label>Daily Chores per Week *</label>
+                            <input type="number" id="child-daily-count" min="0" max="10" placeholder="0-10" required>
+                            <small style="color: #6b7280;">How many daily chores to assign</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Weekly Chores per Week *</label>
+                            <input type="number" id="child-weekly-count" min="0" max="10" placeholder="0-10" required>
+                            <small style="color: #6b7280;">How many weekly chores to assign</small>
+                        </div>
+                    </div>
+
+                    <div style="text-align: center; margin-top: 30px;">
+                        <button type="submit" class="btn-cartoon btn-orange" style="font-size: 1.3rem; padding: 20px 40px;">
+                            👶 Add Child to Family 👶
+                        </button>
+                    </div>
+                </form>
             </div>
 
-            <!-- Quick Actions -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 40px auto; max-width: 1000px;">
-                <button class="feature-card" style="background: #dcfce7; border-color: var(--cartoon-green); cursor: pointer;" onclick="showPage('chore-management-page')">
-                    <span style="font-size: 3rem; margin-bottom: 15px; display: block;">➕</span>
-                    <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;">Manage Chores</div>
-                    <div style="font-size: 1rem;">Create & assign chores</div>
-                </button>
+            <div id="children-list" style="margin-top: 40px;">
+                <!-- Children will be displayed here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        let children = [];
+        let selectedChildDifficulty = 0;
+
+        // Show different pages
+        function showPage(pageId) {
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            
+            if (pageId === 'child-management-page') {
+                loadStoredChildren();
+            }
+        }
+
+        // Handle signup
+        function handleSignup(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const familyName = formData.get('familyName');
+            const email = formData.get('email');
+            const password = formData.get('password');
+            
+            if (!familyName || !email || !password) {
+                alert('❌ Please fill in all fields!');
+                return;
+            }
+            
+            const existingAccounts = JSON.parse(localStorage.getItem('familyAccounts') || '{}');
+            if (existingAccounts[email]) {
+                alert('❌ An account with this email already exists!');
+                return;
+            }
+            
+            const newAccount = {
+                familyName: familyName,
+                email: email,
+                password: password,
+                createdAt: new Date().toISOString(),
+                subscription: 'free'
+            };
+            
+            existingAccounts[email] = newAccount;
+            localStorage.setItem('familyAccounts', JSON.stringify(existingAccounts));
+            
+            alert('🎉 Account created successfully! You can now sign in.');
+            event.target.reset();
+            showPage('login-page');
+            
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = password;
+        }
+
+        // Handle login
+        function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (email === 'demo@family.com' && password === 'demo123') {
+                currentUser = {
+                    name: 'Demo Parent',
+                    familyName: 'Demo Family',
+                    email: email,
+                    subscription: 'free'
+                };
                 
-                <button class="feature-card" style="background: #fef3c7; border-color: var(--cartoon-orange); cursor: pointer;" onclick="showPage('child-management-page')">
-                    <span style="font-size: 3rem; margin-bottom: 15px; display: block; animation: wiggle 2s ease-in-out infinite;">👶</span>
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                alert('🎉 Welcome back! Redirecting to dashboard...');
+                showPage('dashboard-page');
+                updateWelcomeMessage();
+                return;
+            }
+            
+            const existingAccounts = JSON.parse(localStorage.getItem('familyAccounts') || '{}');
+            const account = existingAccounts[email];
+            
+            if (account && account.password === password) {
+                currentUser = {
+                    name: account.familyName + ' Parent',
+                    familyName: account.familyName,
+                    email: account.email,
+                    subscription: account.subscription || 'free'
+                };
+                
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                alert('🎉 Welcome back! Redirecting to dashboard...');
+                showPage('dashboard-page');
+                updateWelcomeMessage();
+            } else {
+                alert('❌ Invalid credentials! Use demo account: demo@family.com / demo123');
+            }
+        }
+
+        // Handle child login
+        function handleChildLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('child-name').value.toLowerCase().trim();
+            const password = document.getElementById('child-password').value;
+            
+            if (username === 'alex' && password === 'kid123') {
+                currentUser = {
+                    name: 'Alex',
+                    type: 'child',
+                    id: 'demo'
+                };
+                
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                alert('🌺 Welcome Alex! This is a demo child account.');
+                return;
+            }
+            
+            loadStoredChildren();
+            const child = children.find(c => c.username === username && c.password === password);
+            
+            if (child) {
+                currentUser = {
+                    name: child.name,
+                    type: 'child',
+                    id: child.id,
+                    childData: child
+                };
+                
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                alert('🌺 Welcome ' + child.name + '! Child dashboard coming soon...');
+            } else {
+                alert('❌ Invalid credentials! Use demo: alex / kid123');
+            }
+        }
+
+        // Update welcome message
+        function updateWelcomeMessage() {
+            if (currentUser) {
+                document.getElementById('welcome-message').textContent = 'Welcome, ' + currentUser.familyName + '! 🎉';
+            }
+        }
+
+        // Set child difficulty
+        function setChildDifficulty(level) {
+            selectedChildDifficulty = level;
+            document.getElementById('child-max-difficulty').value = level;
+            
+            const stars = document.querySelectorAll('#child-difficulty-selector div');
+            stars.forEach(function(star, index) {
+                if (index < level) {
+                    star.style.background = 'var(--cartoon-yellow)';
+                    star.style.borderColor = 'var(--cartoon-yellow)';
+                    star.style.color = 'white';
+                } else {
+                    star.style.background = 'white';
+                    star.style.borderColor = '#ddd';
+                    star.style.color = '#666';
+                }
+            });
+        }
+
+        // Handle add child
+        function handleAddChild(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('child-form-name').value;
+            const age = document.getElementById('child-age').value;
+            const username = document.getElementById('child-username').value.toLowerCase().trim();
+            const password = document.getElementById('child-login-password').value;
+            const maxDifficulty = selectedChildDifficulty;
+            const dailyCount = parseInt(document.getElementById('child-daily-count').value);
+            const weeklyCount = parseInt(document.getElementById('child-weekly-count').value);
+            
+            if (!name || !username || !password || !maxDifficulty) {
+                alert('❌ Please fill in all required fields!');
+                return;
+            }
+            
+            if (dailyCount < 0 || dailyCount > 10) {
+                alert('❌ Daily chores must be between 0-10!');
+                return;
+            }
+            
+            if (weeklyCount < 0 || weeklyCount > 10) {
+                alert('❌ Weekly chores must be between 0-10!');
+                return;
+            }
+            
+            if (children.some(child => child.username === username)) {
+                alert('❌ Username already taken!');
+                return;
+            }
+            
+            if (!/^[a-zA-Z0-9]+$/.test(username)) {
+                alert('❌ Username can only contain letters and numbers!');
+                return;
+            }
+            
+            const newChild = {
+                id: Date.now(),
+                name: name,
+                age: age || null,
+                username: username,
+                password: password,
+                maxDifficulty: maxDifficulty,
+                dailyChoresCount: dailyCount,
+                weeklyChoresCount: weeklyCount,
+                assignedChores: [],
+                createdAt: new Date().toISOString()
+            };
+            
+            children.push(newChild);
+            saveFamilyChildren();
+            renderChildrenList();
+            
+            alert('🎉 ' + name + ' has been added to your family!');
+            resetChildForm();
+        }
+
+        // Load stored children
+        function loadStoredChildren() {
+            const stored = localStorage.getItem('familyChildren');
+            if (stored) {
+                children = JSON.parse(stored);
+            } else {
+                children = [];
+            }
+            renderChildrenList();
+        }
+
+        // Save children
+        function saveFamilyChildren() {
+            localStorage.setItem('familyChildren', JSON.stringify(children));
+        }
+
+        // Render children list
+        function renderChildrenList() {
+            const container = document.getElementById('children-list');
+            
+            if (children.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;"><div style="font-size: 4rem; margin-bottom: 15px;">👶</div><h3>No children added yet!</h3><p>Add your first child using the form above.</p></div>';
+                return;
+            }
+            
+            let childrenHTML = '<h3 style="text-align: center; color: var(--cartoon-blue); margin-bottom: 30px;">👨‍👩‍👧‍👦 Your Family Members</h3>';
+            
+            children.forEach(function(child) {
+                childrenHTML += '<div style="background: white; border: 4px solid var(--cartoon-blue); border-radius: 20px; padding: 25px; margin: 15px 0; box-shadow: 0 10px 20px rgba(0,0,0,0.1);">';
+                childrenHTML += '<div style="display: flex; align-items: center; gap: 20px;">';
+                childrenHTML += '<div style="width: 60px; height: 60px; border-radius: 50%; border: 3px solid var(--cartoon-blue); background: linear-gradient(135deg, var(--cartoon-blue), var(--cartoon-purple)); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: white;">';
+                childrenHTML += child.name.charAt(0).toUpperCase();
+                childrenHTML += '</div>';
+                childrenHTML += '<div style="flex: 1;">';
+                childrenHTML += '<div style="font-size: 1.3rem; font-weight: bold; color: #333; margin-bottom: 5px;">' + child.name + '</div>';
+                childrenHTML += '<div style="color: #666; font-size: 0.9rem;">';
+                if (child.age) {
+                    childrenHTML += 'Age: ' + child.age + ' • ';
+                }
+                childrenHTML += 'Max Difficulty: ' + child.maxDifficulty + '⭐ • Username: <strong>' + child.username + '</strong></div>';
+                childrenHTML += '<div style="color: #666; font-size: 0.9rem;">Daily: ' + child.dailyChoresCount + ', Weekly: ' + child.weeklyChoresCount + ' • Password: <strong>' + child.password + '</strong></div>';
+                childrenHTML += '</div>';
+                childrenHTML += '<div style="display: flex; gap: 10px;">';
+                childrenHTML += '<button class="btn-cartoon btn-red btn-small" onclick="deleteChild(' + child.id + ')">🗑️ Remove</button>';
+                childrenHTML += '</div>';
+                childrenHTML += '</div>';
+                childrenHTML += '</div>';
+            });
+            
+            container.innerHTML = childrenHTML;
+        }
+
+        // Delete child
+        function deleteChild(childId) {
+            const child = children.find(c => c.id === childId);
+            if (!child) return;
+            
+            if (confirm('Are you sure you want to remove ' + child.name + ' from your family?')) {
+                children = children.filter(c => c.id !== childId);
+                saveFamilyChildren();
+                renderChildrenList();
+                alert('✅ ' + child.name + ' has been removed.');
+            }
+        }
+
+        // Reset form
+        function resetChildForm() {
+            document.getElementById('child-form').reset();
+            selectedChildDifficulty = 0;
+            
+            const stars = document.querySelectorAll('#child-difficulty-selector div');
+            stars.forEach(function(star) {
+                star.style.background = 'white';
+                star.style.borderColor = '#ddd';
+                star.style.color = '#666';
+            });
+        }
+
+        // Check for existing session
+        function checkExistingSession() {
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    
+                    if (currentUser.type === 'child') {
+                        alert('Child dashboard coming soon!');
+                        showPage('landing-page');
+                    } else {
+                        showPage('dashboard-page');
+                        updateWelcomeMessage();
+                    }
+                } catch (error) {
+                    localStorage.removeItem('currentUser');
+                }
+            }
+        }
+
+        // Logout
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            alert('👋 Logged out successfully!');
+            showPage('landing-page');
+        }
+
+        // Placeholder functions
+        function upgradeModal() {
+            alert('✨ UPGRADE TO PREMIUM! ✨\n\nIn a real app, this would redirect to payment processing for $7.99/month!\n\nPremium features:\n• Unlimited chores\n• Advanced scheduling\n• Detailed analytics\n• Priority support');
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            checkExistingSession();
+            
+            if (!currentUser) {
+                showPage('landing-page');
+            }
+        });
+    </script>
+</body>
+</html>7280;" onclick="logout()">
+                        🚪 Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <h2 style="text-align: center; font-size: 2rem; color: var(--cartoon-blue); margin-bottom: 30px;">
+                🎯 Welcome to Your Family Dashboard! 🎯
+            </h2>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 40px auto; max-width: 1000px;">
+                <div class="feature-card" style="background: #dcfce7; border-color: var(--cartoon-green); cursor: pointer;" onclick="showPage('child-management-page')">
+                    <span style="font-size: 3rem; margin-bottom: 15px; display: block;">👶</span>
                     <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;">Manage Children</div>
                     <div style="font-size: 1rem;">Add & manage kids</div>
-                </button>
+                </div>
                 
-                <button class="feature-card" style="background: #dbeafe; border-color: var(--cartoon-blue);" onclick="weeklySchedule()">
+                <div class="feature-card" style="background: #dbeafe; border-color: var(--cartoon-blue); cursor: pointer;" onclick="alert('Feature coming soon!')">
                     <span style="font-size: 3rem; margin-bottom: 15px; display: block;">📅</span>
                     <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;">Weekly Schedule</div>
                     <div style="font-size: 1rem;">Plan the week</div>
-                </button>
+                </div>
                 
-                <button class="feature-card" style="background: #dcfce7; border-color: var(--cartoon-green);" onclick="generateReport()">
-                    <span style="font-size: 3rem; margin-bottom: 15px; display: block;" class="animate-pulse-rainbow">📊</span>
-                    <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;">Generate Report</div>
+                <div class="feature-card" style="background: #f3e8ff; border-color: var(--cartoon-purple); cursor: pointer;" onclick="alert('Feature coming soon!')">
+                    <span style="font-size: 3rem; margin-bottom: 15px; display: block;">📊</span>
+                    <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;">Reports</div>
                     <div style="font-size: 1rem;">Family progress</div>
-                </button>
-            </div>
-
-            <!-- Premium Features Preview -->
-            <div class="upgrade-banner" id="upgrade-banner">
-                <h3 style="font-size: 2.5rem; font-weight: bold; color: var(--cartoon-purple); margin-bottom: 20px;" class="animate-bounce-fun">
-                    🌟 Unlock Premium Magic! 🌟
-                </h3>
-                <p style="font-size: 1.3rem; color: #7c2d92; margin-bottom: 30px; font-weight: bold;">
-                    Get unlimited chores, advanced scheduling, reward systems, and detailed analytics!
-                </p>
-                <button class="btn-cartoon" style="background: var(--cartoon-purple); font-size: 1.3rem;" onclick="showUpgradeModal()">
-                    ✨ Upgrade Now - $7.99/month! ✨
-                </button>
+                </div>
+                
+                <div class="feature-card" style="background: #fff7ed; border-color: var(--cartoon-orange); cursor: pointer;" onclick="alert('Feature coming soon!')">
+                    <span style="font-size: 3rem; margin-bottom: 15px; display: block;">⚙️</span>
+                    <div style="font-size: 1.3rem; font-weight: bold; margin-bottom: 10px;">Settings</div>
+                    <div style="font-size: 1rem;">Family settings</div>
+                </div>
             </div>
         </div>
     </div>
@@ -1788,1709 +1055,4 @@
                     <button class="btn-cartoon btn-blue" onclick="showPage('dashboard-page')">
                         ← Back to Dashboard
                     </button>
-                    <button class="btn-cartoon" style="background: #6b7280;" onclick="logout()">
-                        🚪 Logout
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="child-management-container">
-            <!-- Add New Child Form -->
-            <div class="child-form-container">
-                <h2 style="font-size: 2.5rem; font-weight: bold; color: var(--cartoon-orange); margin-bottom: 30px; text-align: center;">
-                    ✨ Add New Child ✨
-                </h2>
-
-                <form id="child-form" onsubmit="handleAddChild(event)">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Child's Name *</label>
-                            <input type="text" id="child-form-name" placeholder="Enter child's name" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Age (Optional)</label>
-                            <input type="number" id="child-age" min="3" max="18" placeholder="Age">
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Profile Picture (Optional)</label>
-                            <div class="file-input-wrapper">
-                                <input type="file" id="child-picture" accept="image/*" onchange="previewImage(this)">
-                                <div class="file-input-button">📷 Choose Picture</div>
-                            </div>
-                            <div id="image-preview" style="margin-top: 10px;"></div>
-                        </div>
-                        <div class="form-group">
-                            <label>Max Chore Difficulty *</label>
-                            <div class="difficulty-selector" id="child-difficulty-selector">
-                                <div class="difficulty-star" data-level="1" onclick="setChildDifficulty(1)">⭐</div>
-                                <div class="difficulty-star" data-level="2" onclick="setChildDifficulty(2)">⭐</div>
-                                <div class="difficulty-star" data-level="3" onclick="setChildDifficulty(3)">⭐</div>
-                                <div class="difficulty-star" data-level="4" onclick="setChildDifficulty(4)">⭐</div>
-                                <div class="difficulty-star" data-level="5" onclick="setChildDifficulty(5)">⭐</div>
-                            </div>
-                            <small style="color: #6b7280;">Maximum difficulty level for auto-assigned chores</small>
-                            <input type="hidden" id="child-max-difficulty" required>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Daily Chores per Week *</label>
-                            <input type="number" id="child-daily-count" min="0" max="10" placeholder="0-10" required>
-                            <small style="color: #6b7280;">How many daily chores to assign automatically</small>
-                        </div>
-                        <div class="form-group">
-                            <label>Weekly Chores per Week *</label>
-                            <input type="number" id="child-weekly-count" min="0" max="10" placeholder="0-10" required>
-                            <small style="color: #6b7280;">How many weekly chores to assign automatically</small>
-                        </div>
-                    </div>
-
-                    <div class="form-row single">
-                        <div class="form-group">
-                            <label>Login Credentials</label>
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>Username *</label>
-                                    <input type="text" id="child-username" placeholder="Enter unique username" required>
-                                    <small style="color: #6b7280;">Choose a unique username for your child</small>
-                                </div>
-                                <div class="form-group">
-                                    <label>Password *</label>
-                                    <input type="text" id="child-login-password" placeholder="Create password for child" required>
-                                    <small style="color: #6b7280;">Child will use this to log in</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="text-align: center; margin-top: 30px;">
-                        <button type="submit" class="btn-cartoon btn-orange" style="font-size: 1.3rem; padding: 20px 40px;">
-                            👶 Add Child to Family 👶
-                        </button>
-                        <button type="button" class="btn-cartoon" style="background: #6b7280; margin-left: 15px;" onclick="resetChildForm()">
-                            🔄 Reset Form
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Children List -->
-            <div class="master-chore-list">
-                <h2 style="font-size: 2rem; font-weight: bold; color: var(--cartoon-blue); margin-bottom: 30px; text-align: center;">
-                    👨‍👩‍👧‍👦 Family Members
-                </h2>
-
-                <div id="children-list-container">
-                    <!-- Children profiles will be dynamically inserted here -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Child Profile Modal -->
-    <div id="child-profile-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title" id="modal-child-name">Child Profile</h2>
-                <button class="close-modal" onclick="closeChildProfile()">&times;</button>
-            </div>
-            
-            <div id="child-profile-content">
-                <!-- Profile content will be loaded here -->
-            </div>
-        </div>
-    </div>
-    <div id="chore-management-page" class="page">
-        <div class="dashboard-nav">
-            <div class="nav-content">
-                <div>
-                    <span class="nav-title animate-bounce-fun">🎯 Chore Management</span>
-                </div>
-                <div class="nav-actions">
-                    <button class="btn-cartoon btn-blue" onclick="showPage('dashboard-page')">
-                        ← Back to Dashboard
-                    </button>
-                    <button class="btn-cartoon" style="background: #6b7280;" onclick="logout()">
-                        🚪 Logout
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="chore-management-container">
-            <!-- Add New Chore Form -->
-            <div class="chore-form-container">
-                <h2 style="font-size: 2.5rem; font-weight: bold; color: var(--cartoon-blue); margin-bottom: 30px; text-align: center;">
-                    ✨ Create New Chore ✨
-                </h2>
-
-                <form id="chore-form" onsubmit="handleAddChore(event)">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Chore Title *</label>
-                            <input type="text" id="chore-title" placeholder="e.g., Clean bedroom" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Category *</label>
-                            <select id="chore-category" required onchange="updateScheduleOptions()">
-                                <option value="">Select category</option>
-                                <option value="daily">Daily Chore</option>
-                                <option value="weekly">Weekly Chore</option>
-                                <option value="continuous">Continuous Chore</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Monetary Value *</label>
-                            <input type="number" id="chore-amount" min="0.05" max="50.00" step="0.05" placeholder="0.00" required>
-                            <small style="color: #6b7280;">Amount in dollars (increments of $0.05)</small>
-                        </div>
-                        <div class="form-group">
-                            <label>Difficulty Level *</label>
-                            <div class="difficulty-selector" id="difficulty-selector">
-                                <div class="difficulty-star" data-level="1" onclick="setDifficulty(1)">⭐</div>
-                                <div class="difficulty-star" data-level="2" onclick="setDifficulty(2)">⭐</div>
-                                <div class="difficulty-star" data-level="3" onclick="setDifficulty(3)">⭐</div>
-                                <div class="difficulty-star" data-level="4" onclick="setDifficulty(4)">⭐</div>
-                                <div class="difficulty-star" data-level="5" onclick="setDifficulty(5)">⭐</div>
-                            </div>
-                            <small style="color: #6b7280;">1 = Very Easy, 5 = Very Hard</small>
-                            <input type="hidden" id="chore-difficulty" required>
-                        </div>
-                    </div>
-
-                    <div class="form-row single">
-                        <div class="form-group">
-                            <label>Description *</label>
-                            <textarea id="chore-description" placeholder="Describe what needs to be done..." required></textarea>
-                        </div>
-                    </div>
-
-                    <div class="form-row single" id="schedule-section" style="display: none;">
-                        <div class="form-group">
-                            <label id="schedule-label">Select Days</label>
-                            <div class="days-selector" id="days-selector">
-                                <div class="day-button" data-day="sunday" onclick="toggleDay('sunday')">Sun</div>
-                                <div class="day-button" data-day="monday" onclick="toggleDay('monday')">Mon</div>
-                                <div class="day-button" data-day="tuesday" onclick="toggleDay('tuesday')">Tue</div>
-                                <div class="day-button" data-day="wednesday" onclick="toggleDay('wednesday')">Wed</div>
-                                <div class="day-button" data-day="thursday" onclick="toggleDay('thursday')">Thu</div>
-                                <div class="day-button" data-day="friday" onclick="toggleDay('friday')">Fri</div>
-                                <div class="day-button" data-day="saturday" onclick="toggleDay('saturday')">Sat</div>
-                            </div>
-                            <small style="color: #6b7280;" id="schedule-help">Select which days this chore should be done</small>
-                            <input type="hidden" id="chore-schedule" required>
-                        </div>
-                    </div>
-
-                    <div style="text-align: center; margin-top: 30px;">
-                        <button type="submit" class="btn-cartoon btn-green" style="font-size: 1.3rem; padding: 20px 40px;">
-                            🌟 Add Chore to Master List 🌟
-                        </button>
-                        <button type="button" class="btn-cartoon" style="background: #6b7280; margin-left: 15px;" onclick="resetForm()">
-                            🔄 Reset Form
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Master Chore List -->
-            <div class="master-chore-list">
-                <h2 style="font-size: 2rem; font-weight: bold; color: var(--cartoon-green); margin-bottom: 30px; text-align: center;">
-                    📋 Master Chore List
-                </h2>
-
-                <div style="margin-bottom: 20px; text-align: center;">
-                    <button class="btn-cartoon btn-blue btn-small" onclick="filterChores('all')" id="filter-all">All</button>
-                    <button class="btn-cartoon btn-yellow btn-small" onclick="filterChores('daily')" id="filter-daily">Daily</button>
-                    <button class="btn-cartoon btn-pink btn-small" onclick="filterChores('weekly')" id="filter-weekly">Weekly</button>
-                    <button class="btn-cartoon btn-purple btn-small" onclick="filterChores('continuous')" id="filter-continuous">Continuous</button>
-                </div>
-
-                <div id="chore-list-container">
-                    <!-- Chores will be dynamically inserted here -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Child Dashboard -->
-    <div id="child-dashboard-page" class="page child-dashboard">
-        <div class="dashboard-nav">
-            <div class="nav-content">
-                <div>
-                    <span class="nav-title animate-bounce-fun">🌟 My Chore Adventure</span>
-                </div>
-                <div class="nav-actions">
-                    <span style="font-size: 1.2rem; font-weight: bold; color: var(--cartoon-blue);" id="child-welcome">Hi Alex! 👋</span>
-                    <button class="btn-cartoon btn-blue" onclick="toggleEarnings()">
-                        <span id="earnings-toggle-text">👁️ Hide Earnings</span>
-                    </button>
-                    <button class="btn-cartoon" style="background: #6b7280;" onclick="logout()">
-                        🚪 Sign Out
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div class="main-content">
-            <div style="text-align: center; margin-bottom: 30px;">
-                <h1 class="child-title animate-bounce-fun" id="child-title">Hi Alex! 👋</h1>
-                <p style="font-size: 1.3rem; color: #6b7280;">Ready to tackle your chores and earn some money?</p>
-            </div>
-
-            <!-- Progress Overview -->
-            <div class="progress-card">
-                <div style="text-align: center;">
-                    <h2 style="font-size: 2rem; font-weight: bold; color: var(--cartoon-green); margin-bottom: 20px; display: flex; align-items: center; justify-content: center; gap: 15px;">
-                        <span>🏆</span>
-                        <span>Your Progress Today</span>
-                        <span>🏆</span>
-                    </h2>
-                    
-                    <div style="font-size: 4rem; font-weight: bold; color: var(--cartoon-green); margin-bottom: 10px;" id="progress-fraction">
-                        2/4
-                    </div>
-                    <div style="font-size: 1.3rem; color: #6b7280; margin-bottom: 20px;">Chores Completed</div>
-                    
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progress-fill" style="width: 50%;"></div>
-                    </div>
-                    <p style="color: #6b7280; margin-top: 10px;" id="progress-percent">50% Complete</p>
-                </div>
-
-                <!-- Earnings Display -->
-                <div class="earnings-grid" id="earnings-display">
-                    <div class="earnings-card animate-bounce-fun" style="border-color: var(--cartoon-blue);">
-                        <div style="font-size: 2.5rem; margin-bottom: 10px;">💰</div>
-                        <p style="font-size: 0.9rem; font-weight: bold; color: var(--cartoon-blue); margin-bottom: 10px;">Today</p>
-                        <p style="font-size: 2rem; font-weight: bold; color: var(--cartoon-blue);" id="today-earnings">$7.50</p>
-                    </div>
-                    <div class="earnings-card animate-bounce-fun" style="border-color: var(--cartoon-green); animation-delay: 0.2s;">
-                        <div style="font-size: 2.5rem; margin-bottom: 10px;">🏆</div>
-                        <p style="font-size: 0.9rem; font-weight: bold; color: var(--cartoon-green); margin-bottom: 10px;">This Week</p>
-                        <p style="font-size: 2rem; font-weight: bold; color: var(--cartoon-green);" id="week-earnings">$12.50</p>
-                    </div>
-                    <div class="earnings-card animate-bounce-fun" style="border-color: var(--cartoon-pink); animation-delay: 0.4s;">
-                        <div style="font-size: 2.5rem; margin-bottom: 10px;">🗓️</div>
-                        <p style="font-size: 0.9rem; font-weight: bold; color: var(--cartoon-pink); margin-bottom: 10px;">All Time</p>
-                        <p style="font-size: 2rem; font-weight: bold; color: var(--cartoon-pink);" id="total-earnings">$45.00</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Chores Display -->
-            <div class="chores-grid">
-                <!-- Daily Chores -->
-                <div class="chore-category daily">
-                    <div class="chore-category-header animate-bounce-fun">
-                        <span>🌞 Today's Daily Fun! 🌞</span>
-                    </div>
-                    <div id="daily-chores">
-                        <div class="chore-item completed" data-chore-id="1">
-                            <div class="chore-checkbox completed" onclick="toggleChore(1)">✓</div>
-                            <div class="chore-details">
-                                <div class="chore-name">Clean Bedroom</div>
-                                <div class="chore-category-tag">daily</div>
-                            </div>
-                            <div class="chore-amount">$5.00</div>
-                        </div>
-                        <div class="chore-item" data-chore-id="2">
-                            <div class="chore-checkbox" onclick="toggleChore(2)"></div>
-                            <div class="chore-details">
-                                <div class="chore-name">Feed Dog</div>
-                                <div class="chore-category-tag">daily</div>
-                            </div>
-                            <div class="chore-amount">$2.50</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Weekly Chores -->
-                <div class="chore-category weekly">
-                    <div class="chore-category-header animate-wiggle">
-                        <span>📅 Weekly Adventures! 📅</span>
-                    </div>
-                    <div id="weekly-chores">
-                        <div class="chore-item completed" data-chore-id="3">
-                            <div class="chore-checkbox completed" onclick="toggleChore(3)">✓</div>
-                            <div class="chore-details">
-                                <div class="chore-name">Take Out Trash</div>
-                                <div class="chore-category-tag">weekly</div>
-                            </div>
-                            <div class="chore-amount">$7.50</div>
-                        </div>
-                        <div class="chore-item" data-chore-id="4">
-                            <div class="chore-checkbox" onclick="toggleChore(4)"></div>
-                            <div class="chore-details">
-                                <div class="chore-name">Vacuum Living Room</div>
-                                <div class="chore-category-tag">weekly</div>
-                            </div>
-                            <div class="chore-amount">$10.00</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Continuous Chores -->
-                <div class="chore-category continuous">
-                    <div class="chore-category-header animate-float">
-                        <span>🔄 Ongoing Tasks! 🔄</span>
-                    </div>
-                    <div id="continuous-chores">
-                        <div style="text-align: center; padding: 40px; color: #6b7280;">
-                            <div style="font-size: 4rem; margin-bottom: 15px;">🎈</div>
-                            <p style="font-size: 1.2rem; font-weight: bold;">No ongoing tasks yet!</p>
-                            <p>Ready for new adventures!</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Achievements Section -->
-            <div class="feature-card" style="margin: 40px auto; max-width: 1000px;">
-                <h2 style="font-size: 2rem; font-weight: bold; color: var(--cartoon-orange); margin-bottom: 30px; text-align: center;">
-                    🏆 Your Achievements 🏆
-                </h2>
-                
-                <div class="achievements-grid">
-                    <div class="achievement-card unlocked">
-                        <div class="achievement-icon">⭐</div>
-                        <p style="font-size: 1rem; font-weight: bold; margin-bottom: 5px;">Star Performer</p>
-                        <p style="font-size: 0.8rem; color: #6b7280;">3+ chores done</p>
-                    </div>
-
-                    <div class="achievement-card">
-                        <div class="achievement-icon">🏆</div>
-                        <p style="font-size: 1rem; font-weight: bold; margin-bottom: 5px;">All Complete</p>
-                        <p style="font-size: 0.8rem; color: #6b7280;">100% done</p>
-                    </div>
-
-                    <div class="achievement-card">
-                        <div class="achievement-icon">💰</div>
-                        <p style="font-size: 1rem; font-weight: bold; margin-bottom: 5px;">Money Maker</p>
-                        <p style="font-size: 0.8rem; color: #6b7280;">$10+ earned</p>
-                    </div>
-
-                    <div class="achievement-card">
-                        <div class="achievement-icon">✨</div>
-                        <p style="font-size: 1rem; font-weight: bold; margin-bottom: 5px;">Super Helper</p>
-                        <p style="font-size: 0.8rem; color: #6b7280;">5+ chores done</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Current user state
-        let currentUser = null;
-        let isPremium = false;
-        let showEarnings = true;
-        let selectedDifficulty = 0;
-        let selectedDays = [];
-        let masterChores = [];
-        let currentFilter = 'all';
-        let children = [];
-        let selectedChildDifficulty = 0;
-        let currentChildProfile = null;
-        
-        // Demo data for child dashboard
-        let choreData = {
-            1: { id: 1, name: 'Clean Bedroom', category: 'daily', amount: 5.00, completed: true },
-            2: { id: 2, name: 'Feed Dog', category: 'daily', amount: 2.50, completed: false },
-            3: { id: 3, name: 'Take Out Trash', category: 'weekly', amount: 7.50, completed: true },
-            4: { id: 4, name: 'Vacuum Living Room', category: 'weekly', amount: 10.00, completed: false }
-        };
-
-        // Load stored chores on page load
-        function loadStoredChores() {
-            const stored = localStorage.getItem('masterChores');
-            if (stored) {
-                masterChores = JSON.parse(stored);
-            } else {
-                // Initialize with some demo chores
-                masterChores = [
-                    {
-                        id: Date.now(),
-                        title: "Clean Bedroom",
-                        category: "daily",
-                        amount: 5.00,
-                        difficulty: 3,
-                        description: "Make bed, organize toys, vacuum floor",
-                        schedule: ["monday", "wednesday", "friday"],
-                        createdAt: new Date().toISOString()
-                    },
-                    {
-                        id: Date.now() + 1,
-                        title: "Take Out Trash",
-                        category: "weekly",
-                        amount: 7.50,
-                        difficulty: 2,
-                        description: "Collect trash from all rooms and take to curb",
-                        schedule: ["tuesday"],
-                        createdAt: new Date().toISOString()
-                    }
-                ];
-                saveMasterChores();
-            }
-            renderChoreList();
-        }
-
-        // Save chores to localStorage
-        function saveMasterChores() {
-            localStorage.setItem('masterChores', JSON.stringify(masterChores));
-        }
-
-        // Show different pages
-        function showPage(pageId) {
-            // Hide all pages
-            const pages = document.querySelectorAll('.page');
-            pages.forEach(page => page.classList.remove('active'));
-            
-            // Show selected page
-            document.getElementById(pageId).classList.add('active');
-            
-            // Load data based on page
-            if (pageId === 'chore-management-page') {
-                loadStoredChores();
-            } else if (pageId === 'child-management-page') {
-                loadStoredChildren();
-                loadStoredChores(); // Also load chores for assignment
-            }
-        }
-
-        // Handle signup form
-        function handleSignup(event) {
-            event.preventDefault();
-            
-            // Get form data
-            const formData = new FormData(event.target);
-            const familyName = formData.get('familyName');
-            const email = formData.get('email');
-            const password = formData.get('password');
-            
-            // Validate inputs
-            if (!familyName || !email || !password) {
-                alert('❌ Please fill in all fields!');
-                return;
-            }
-            
-            // Check if email already exists
-            const existingAccounts = JSON.parse(localStorage.getItem('familyAccounts') || '{}');
-            if (existingAccounts[email]) {
-                alert('❌ An account with this email already exists! Please use a different email or sign in instead.');
-                return;
-            }
-            
-            // Create new account
-            const newAccount = {
-                familyName: familyName,
-                email: email,
-                password: password, // In real app, this would be hashed!
-                createdAt: new Date().toISOString(),
-                subscription: 'free',
-                children: [],
-                chores: []
-            };
-            
-            // Store account
-            existingAccounts[email] = newAccount;
-            localStorage.setItem('familyAccounts', JSON.stringify(existingAccounts));
-            
-            alert(`🎉 Welcome to ChoreTracker, ${familyName} family! Your account has been created successfully. You can now sign in with your email and password.`);
-            
-            // Clear form and redirect to login
-            event.target.reset();
-            showPage('login-page');
-            
-            // Pre-fill login form with new account details
-            document.getElementById('email').value = email;
-            document.getElementById('password').value = password;
-        }
-
-        // Handle login form
-        function handleLogin(event) {
-            event.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            console.log('Attempting login for:', email); // Debug log
-            
-            // Check demo account first
-            if (email === 'demo@family.com' && password === 'demo123') {
-                currentUser = {
-                    name: 'Demo Parent',
-                    familyName: 'Demo Family',
-                    email: email,
-                    subscription: 'free'
-                };
-                
-                // Store current session
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                
-                alert('🎉 Welcome back to the demo! Redirecting to your dashboard...');
-                showPage('dashboard-page');
-                
-                // Small delay to ensure page elements are loaded
-                setTimeout(() => {
-                    updateDashboardForUser();
-                }, 100);
-                return;
-            }
-            
-            // Check stored accounts
-            const existingAccounts = JSON.parse(localStorage.getItem('familyAccounts') || '{}');
-            console.log('Existing accounts:', Object.keys(existingAccounts)); // Debug log
-            
-            const account = existingAccounts[email];
-            
-            if (account && account.password === password) {
-                currentUser = {
-                    name: account.familyName + ' Parent',
-                    familyName: account.familyName,
-                    email: account.email,
-                    subscription: account.subscription || 'free'
-                };
-                
-                // Store current session
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                
-                alert(`🎉 Welcome back, ${account.familyName} family! Redirecting to your dashboard...`);
-                showPage('dashboard-page');
-                updateDashboardForUser();
-                
-                // Update welcome message
-                const welcomeElement = document.getElementById('welcome-message');
-                if (welcomeElement) {
-                    welcomeElement.textContent = `Welcome, ${account.familyName} family! 🎉`;
-                }
-            } else {
-                console.log('Login failed for:', email); // Debug log
-                console.log('Account found:', !!account); // Debug log
-                console.log('Password match:', account ? account.password === password : false); // Debug log
-                
-                alert('❌ Invalid credentials! Please check your email and password, or use the demo account:\nEmail: demo@family.com\nPassword: demo123');
-            }
-        }
-
-        // Handle child login
-        function handleChildLogin(event) {
-            event.preventDefault();
-            const username = document.getElementById('child-name').value.toLowerCase().trim();
-            const password = document.getElementById('child-password').value;
-            
-            // Check demo account first
-            if (username === 'alex' && password === 'kid123') {
-                currentUser = {
-                    name: 'Alex',
-                    type: 'child',
-                    id: 'demo'
-                };
-                
-                // Store current session
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                
-                alert('🌺 Welcome Alex! Let\'s check out your chores!');
-                showPage('child-dashboard-page');
-                updateChildDashboard('Alex');
-                return;
-            }
-            
-            // Check registered children
-            loadStoredChildren(); // Make sure we have latest data
-            const child = children.find(c => c.username === username && c.password === password);
-            
-            if (child) {
-                currentUser = {
-                    name: child.name,
-                    type: 'child',
-                    id: child.id,
-                    childData: child
-                };
-                
-                // Store current session
-                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                
-                alert(`🌺 Welcome ${child.name}! Let's check out your chores!`);
-                showPage('child-dashboard-page');
-                updateChildDashboardFromProfile(child);
-            } else {
-                alert('❌ Invalid credentials! Please check your username and password, or use the demo account:\\nUsername: alex\\nPassword: kid123');
-            }
-        }
-
-        // Update child dashboard from profile data
-        function updateChildDashboardFromProfile(child) {
-            document.getElementById('child-welcome').textContent = `Hi ${child.name}! 👋`;
-            document.getElementById('child-title').textContent = `Hi ${child.name}! 👋`;
-            
-            // Update chores display with child's actual chores
-            updateChildChoresDisplay(child);
-            updateChildProgressDisplay(child);
-        }
-
-        // Update chores display for logged-in child
-        function updateChildChoresDisplay(child) {
-            const dailyChores = child.assignedChores.filter(c => c.category === 'daily');
-            const weeklyChores = child.assignedChores.filter(c => c.category === 'weekly');
-            const continuousChores = child.assignedChores.filter(c => c.category === 'continuous');
-            
-            // Update daily chores
-            const dailyContainer = document.getElementById('daily-chores');
-            if (dailyChores.length === 0) {
-                dailyContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">No daily chores assigned yet!</div>';
-            } else {
-                dailyContainer.innerHTML = dailyChores.map(chore => `
-                    <div class="chore-item ${chore.completed ? 'completed' : ''}" data-chore-id="${chore.assignedId}">
-                        <div class="chore-checkbox ${chore.completed ? 'completed' : ''}" onclick="toggleChildChoreFromDashboard(${chore.assignedId})">
-                            ${chore.completed ? '✓' : ''}
-                        </div>
-                        <div class="chore-details">
-                            <div class="chore-name">${chore.title}</div>
-                            <div class="chore-category-tag">${chore.category}</div>
-                        </div>
-                        <div class="chore-amount">${chore.amount.toFixed(2)}</div>
-                    </div>
-                `).join('');
-            }
-            
-            // Update weekly chores
-            const weeklyContainer = document.getElementById('weekly-chores');
-            if (weeklyChores.length === 0) {
-                weeklyContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">No weekly chores assigned yet!</div>';
-            } else {
-                weeklyContainer.innerHTML = weeklyChores.map(chore => `
-                    <div class="chore-item ${chore.completed ? 'completed' : ''}" data-chore-id="${chore.assignedId}">
-                        <div class="chore-checkbox ${chore.completed ? 'completed' : ''}" onclick="toggleChildChoreFromDashboard(${chore.assignedId})">
-                            ${chore.completed ? '✓' : ''}
-                        </div>
-                        <div class="chore-details">
-                            <div class="chore-name">${chore.title}</div>
-                            <div class="chore-category-tag">${chore.category}</div>
-                        </div>
-                        <div class="chore-amount">${chore.amount.toFixed(2)}</div>
-                    </div>
-                `).join('');
-            }
-            
-            // Update continuous chores
-            const continuousContainer = document.getElementById('continuous-chores');
-            if (continuousChores.length === 0) {
-                continuousContainer.innerHTML = `
-                    <div style="text-align: center; padding: 40px; color: #6b7280;">
-                        <div style="font-size: 4rem; margin-bottom: 15px;">🎈</div>
-                        <p style="font-size: 1.2rem; font-weight: bold;">No ongoing tasks yet!</p>
-                        <p>Ready for new adventures!</p>
-                    </div>
-                `;
-            } else {
-                continuousContainer.innerHTML = continuousChores.map(chore => `
-                    <div class="chore-item ${chore.completed ? 'completed' : ''}" data-chore-id="${chore.assignedId}">
-                        <div class="chore-checkbox ${chore.completed ? 'completed' : ''}" onclick="toggleChildChoreFromDashboard(${chore.assignedId})">
-                            ${chore.completed ? '✓' : ''}
-                        </div>
-                        <div class="chore-details">
-                            <div class="chore-name">${chore.title}</div>
-                            <div class="chore-category-tag">${chore.category}</div>
-                        </div>
-                        <div class="chore-amount">${chore.amount.toFixed(2)}</div>
-                    </div>
-                `).join('');
-            }
-        }
-
-        // Toggle chore from child dashboard
-        function toggleChildChoreFromDashboard(assignedId) {
-            if (!currentUser || currentUser.type !== 'child' || !currentUser.childData) {
-                return;
-            }
-            
-            const child = children.find(c => c.id === currentUser.id);
-            if (!child) return;
-            
-            const chore = child.assignedChores.find(c => c.assignedId === assignedId);
-            if (!chore) return;
-            
-            chore.completed = !chore.completed;
-            
-            // Update earnings
-            updateChildEarnings(child);
-            
-            // Save changes
-            saveFamilyChildren();
-            
-            // Update current user data
-            currentUser.childData = child;
-            localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            
-            // Refresh display
-            updateChildDashboardFromProfile(child);
-            
-            // Show completion celebration
-            if (chore.completed) {
-                showChoreCompletion(chore);
-            }
-        }
-
-        // Update child progress display
-        function updateChildProgressDisplay(child) {
-            const completed = child.assignedChores.filter(c => c.completed).length;
-            const total = child.assignedChores.length;
-            const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
-            
-            document.getElementById('progress-fraction').textContent = `${completed}/${total}`;
-            document.getElementById('progress-fill').style.width = `${percent}%`;
-            document.getElementById('progress-percent').textContent = `${percent}% Complete`;
-            
-            // Update earnings
-            if (showEarnings) {
-                const todayEarnings = child.assignedChores
-                    .filter(c => c.completed)
-                    .reduce((sum, c) => sum + c.amount, 0);
-                
-                document.getElementById('today-earnings').textContent = `${todayEarnings.toFixed(2)}`;
-                document.getElementById('week-earnings').textContent = `${(todayEarnings * 1.5).toFixed(2)}`;
-                document.getElementById('total-earnings').textContent = `${(todayEarnings * 6).toFixed(2)}`;
-            }
-            
-            // Update achievements
-            updateChildAchievements(child);
-        }
-
-        // Update achievements for child
-        function updateChildAchievements(child) {
-            const completed = child.assignedChores.filter(c => c.completed).length;
-            const todayEarnings = child.assignedChores
-                .filter(c => c.completed)
-                .reduce((sum, c) => sum + c.amount, 0);
-            
-            const achievements = document.querySelectorAll('.achievement-card');
-            
-            // Star Performer (3+ chores)
-            if (completed >= 3) {
-                achievements[0].classList.add('unlocked');
-            } else {
-                achievements[0].classList.remove('unlocked');
-            }
-            
-            // All Complete (100%)
-            if (completed === child.assignedChores.length && child.assignedChores.length > 0) {
-                achievements[1].classList.add('unlocked');
-            } else {
-                achievements[1].classList.remove('unlocked');
-            }
-            
-            // Money Maker ($10+)
-            if (todayEarnings >= 10) {
-                achievements[2].classList.add('unlocked');
-            } else {
-                achievements[2].classList.remove('unlocked');
-            }
-            
-            // Super Helper (5+)
-            if (completed >= 5) {
-                achievements[3].classList.add('unlocked');
-            } else {
-                achievements[3].classList.remove('unlocked');
-            }
-        }
-
-        // Update child dashboard
-        function updateChildDashboard(childName) {
-            document.getElementById('child-welcome').textContent = `Hi ${childName}! 👋`;
-            document.getElementById('child-title').textContent = `Hi ${childName}! 👋`;
-            updateProgressDisplay();
-        }
-
-        // Toggle chore completion
-        function toggleChore(choreId) {
-            const chore = choreData[choreId];
-            if (!chore) return;
-            
-            chore.completed = !chore.completed;
-            
-            // Update UI
-            const choreItem = document.querySelector(`[data-chore-id="${choreId}"]`);
-            const checkbox = choreItem.querySelector('.chore-checkbox');
-            
-            if (chore.completed) {
-                choreItem.classList.add('completed');
-                checkbox.classList.add('completed');
-                checkbox.textContent = '✓';
-                
-                // Celebration animation
-                showChoreCompletion(chore);
-            } else {
-                choreItem.classList.remove('completed');
-                checkbox.classList.remove('completed');
-                checkbox.textContent = '';
-            }
-            
-            updateProgressDisplay();
-            updateAchievements();
-        }
-
-        // Show chore completion celebration
-        function showChoreCompletion(chore) {
-            // Create celebration element
-            const celebration = document.createElement('div');
-            celebration.innerHTML = `
-                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                            background: linear-gradient(135deg, #ffd700, #ffed4e); 
-                            border: 4px solid #f59e0b; border-radius: 25px; 
-                            padding: 30px; text-align: center; z-index: 1000;
-                            animation: bounce-fun 0.5s ease-in-out;">
-                    <div style="font-size: 4rem; margin-bottom: 15px;">🎉</div>
-                    <h3 style="font-size: 1.5rem; font-weight: bold; color: #92400e; margin-bottom: 10px;">
-                        Great Job!
-                    </h3>
-                    <p style="font-size: 1.2rem; color: #d97706; margin-bottom: 15px;">
-                        You completed: ${chore.name}
-                    </p>
-                    <p style="font-size: 1.4rem; font-weight: bold; color: #16a34a;">
-                        +${chore.amount.toFixed(2)} earned! 💰
-                    </p>
-                </div>
-            `;
-            
-            document.body.appendChild(celebration);
-            
-            // Remove after 2 seconds
-            setTimeout(() => {
-                document.body.removeChild(celebration);
-            }, 2000);
-        }
-
-        // Update progress display
-        function updateProgressDisplay() {
-            const completed = Object.values(choreData).filter(c => c.completed).length;
-            const total = Object.values(choreData).length;
-            const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
-            
-            document.getElementById('progress-fraction').textContent = `${completed}/${total}`;
-            document.getElementById('progress-fill').style.width = `${percent}%`;
-            document.getElementById('progress-percent').textContent = `${percent}% Complete`;
-            
-            // Update earnings
-            if (showEarnings) {
-                const todayEarnings = Object.values(choreData)
-                    .filter(c => c.completed)
-                    .reduce((sum, c) => sum + c.amount, 0);
-                
-                document.getElementById('today-earnings').textContent = `${todayEarnings.toFixed(2)}`;
-                document.getElementById('week-earnings').textContent = `${(todayEarnings * 1.5).toFixed(2)}`;
-                document.getElementById('total-earnings').textContent = `${(todayEarnings * 6).toFixed(2)}`;
-            }
-        }
-
-        // Update achievements
-        function updateAchievements() {
-            const completed = Object.values(choreData).filter(c => c.completed).length;
-            const todayEarnings = Object.values(choreData)
-                .filter(c => c.completed)
-                .reduce((sum, c) => sum + c.amount, 0);
-            
-            const achievements = document.querySelectorAll('.achievement-card');
-            
-            // Star Performer (3+ chores)
-            if (completed >= 3) {
-                achievements[0].classList.add('unlocked');
-            } else {
-                achievements[0].classList.remove('unlocked');
-            }
-            
-            // All Complete (100%)
-            if (completed === Object.values(choreData).length) {
-                achievements[1].classList.add('unlocked');
-            } else {
-                achievements[1].classList.remove('unlocked');
-            }
-            
-            // Money Maker ($10+)
-            if (todayEarnings >= 10) {
-                achievements[2].classList.add('unlocked');
-            } else {
-                achievements[2].classList.remove('unlocked');
-            }
-            
-            // Super Helper (5+)
-            if (completed >= 5) {
-                achievements[3].classList.add('unlocked');
-            } else {
-                achievements[3].classList.remove('unlocked');
-            }
-        }
-
-        // Toggle earnings display
-        function toggleEarnings() {
-            showEarnings = !showEarnings;
-            const earningsDisplay = document.getElementById('earnings-display');
-            const toggleText = document.getElementById('earnings-toggle-text');
-            
-            if (showEarnings) {
-                earningsDisplay.style.display = 'grid';
-                toggleText.textContent = '👁️ Hide Earnings';
-            } else {
-                earningsDisplay.style.display = 'none';
-                toggleText.textContent = '👁️ Show Earnings';
-            }
-        }
-
-        // Update dashboard based on user subscription
-        function updateDashboardForUser() {
-            const premiumBadge = document.getElementById('premium-badge');
-            const upgradeBtn = document.getElementById('upgrade-btn');
-            const upgradeBanner = document.getElementById('upgrade-banner');
-            
-            if (currentUser && currentUser.subscription === 'premium') {
-                isPremium = true;
-                premiumBadge.style.display = 'inline-block';
-                upgradeBtn.style.display = 'none';
-                upgradeBanner.style.display = 'none';
-            } else {
-                isPremium = false;
-                premiumBadge.style.display = 'none';
-                upgradeBtn.style.display = 'inline-block';
-                upgradeBanner.style.display = 'block';
-            }
-            
-            // Update stats
-            updateDashboardStats();
-        }
-
-        // Update dashboard statistics
-        function updateDashboardStats() {
-            const completedCount = masterChores.filter(c => c.completed).length;
-            const pendingCount = masterChores.length - completedCount;
-            const totalEarnings = masterChores.reduce((sum, c) => sum + (c.completed ? c.amount : 0), 0);
-            
-            document.getElementById('completed-count').textContent = completedCount;
-            document.getElementById('pending-count').textContent = pendingCount;
-            document.getElementById('total-earnings').textContent = `${totalEarnings.toFixed(2)}`;
-            // Children count stays static for demo
-        }
-
-        // Chore Management Functions
-        function updateScheduleOptions() {
-            const category = document.getElementById('chore-category').value;
-            const scheduleSection = document.getElementById('schedule-section');
-            const scheduleLabel = document.getElementById('schedule-label');
-            const scheduleHelp = document.getElementById('schedule-help');
-            const scheduleInput = document.getElementById('chore-schedule');
-            
-            if (category === 'continuous') {
-                scheduleSection.style.display = 'none';
-                scheduleInput.removeAttribute('required');
-                selectedDays = [];
-            } else {
-                scheduleSection.style.display = 'block';
-                scheduleInput.setAttribute('required', 'true');
-                
-                if (category === 'daily') {
-                    scheduleLabel.textContent = 'Select Days for Daily Chore';
-                    scheduleHelp.textContent = 'Choose which days this daily chore should be done';
-                } else if (category === 'weekly') {
-                    scheduleLabel.textContent = 'Select Day for Weekly Chore';
-                    scheduleHelp.textContent = 'Choose one day when this weekly chore should be done';
-                }
-            }
-            
-            // Reset selected days
-            selectedDays = [];
-            updateDaysDisplay();
-        }
-
-        function setDifficulty(level) {
-            selectedDifficulty = level;
-            document.getElementById('chore-difficulty').value = level;
-            
-            // Update visual display
-            const stars = document.querySelectorAll('.difficulty-star');
-            stars.forEach((star, index) => {
-                if (index < level) {
-                    star.classList.add('active');
-                } else {
-                    star.classList.remove('active');
-                }
-            });
-        }
-
-        function toggleDay(day) {
-            const category = document.getElementById('chore-category').value;
-            
-            if (category === 'weekly') {
-                // For weekly chores, only allow one day
-                selectedDays = [day];
-            } else {
-                // For daily chores, allow multiple days
-                const index = selectedDays.indexOf(day);
-                if (index > -1) {
-                    selectedDays.splice(index, 1);
-                } else {
-                    selectedDays.push(day);
-                }
-            }
-            
-            updateDaysDisplay();
-            document.getElementById('chore-schedule').value = selectedDays.join(',');
-        }
-
-        function updateDaysDisplay() {
-            const dayButtons = document.querySelectorAll('.day-button');
-            dayButtons.forEach(button => {
-                const day = button.getAttribute('data-day');
-                if (selectedDays.includes(day)) {
-                    button.classList.add('active');
-                } else {
-                    button.classList.remove('active');
-                }
-            });
-        }
-
-        function handleAddChore(event) {
-            event.preventDefault();
-            
-            const title = document.getElementById('chore-title').value;
-            const category = document.getElementById('chore-category').value;
-            const amount = parseFloat(document.getElementById('chore-amount').value);
-            const difficulty = selectedDifficulty;
-            const description = document.getElementById('chore-description').value;
-            const schedule = selectedDays;
-            
-            // Validation
-            if (!title || !category || !amount || !difficulty || !description) {
-                alert('❌ Please fill in all required fields!');
-                return;
-            }
-            
-            if (category !== 'continuous' && schedule.length === 0) {
-                alert('❌ Please select at least one day for the schedule!');
-                return;
-            }
-            
-            if (category === 'weekly' && schedule.length > 1) {
-                alert('❌ Weekly chores can only be assigned to one day!');
-                return;
-            }
-            
-            // Check free plan limit (10 chores)
-            if (!isPremium && masterChores.length >= 10) {
-                alert('❌ Free plan is limited to 10 chores. Upgrade to Premium for unlimited chores!');
-                showUpgradeModal();
-                return;
-            }
-            
-            // Create new chore
-            const newChore = {
-                id: Date.now(),
-                title: title,
-                category: category,
-                amount: amount,
-                difficulty: difficulty,
-                description: description,
-                schedule: schedule,
-                completed: false,
-                createdAt: new Date().toISOString()
-            };
-            
-            // Add to master list
-            masterChores.push(newChore);
-            saveMasterChores();
-            renderChoreList();
-            
-            // Show success message
-            showChoreAddedSuccess(newChore);
-            
-            // Reset form
-            resetForm();
-        }
-
-        function showChoreAddedSuccess(chore) {
-            // Create success message
-            const success = document.createElement('div');
-            success.innerHTML = `
-                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                            background: linear-gradient(135deg, #dcfce7, #bbf7d0); 
-                            border: 4px solid #16a34a; border-radius: 25px; 
-                            padding: 30px; text-align: center; z-index: 1000;
-                            animation: bounce-fun 0.5s ease-in-out;">
-                    <div style="font-size: 4rem; margin-bottom: 15px;">🎉</div>
-                    <h3 style="font-size: 1.5rem; font-weight: bold; color: #15803d; margin-bottom: 10px;">
-                        Chore Added Successfully!
-                    </h3>
-                    <p style="font-size: 1.2rem; color: #166534; margin-bottom: 15px;">
-                        "${chore.title}" has been added to your master list!
-                    </p>
-                    <p style="font-size: 1rem; color: #16a34a;">
-                        ${chore.category.charAt(0).toUpperCase() + chore.category.slice(1)} • ${chore.amount.toFixed(2)} • ${chore.difficulty}⭐
-                    </p>
-                </div>
-            `;
-            
-            document.body.appendChild(success);
-            
-            // Remove after 3 seconds
-            setTimeout(() => {
-                document.body.removeChild(success);
-            }, 3000);
-        }
-
-        function resetForm() {
-            document.getElementById('chore-form').reset();
-            selectedDifficulty = 0;
-            selectedDays = [];
-            
-            // Reset visual elements
-            document.querySelectorAll('.difficulty-star').forEach(star => star.classList.remove('active'));
-            document.querySelectorAll('.day-button').forEach(button => button.classList.remove('active'));
-            document.getElementById('schedule-section').style.display = 'none';
-        }
-
-        function renderChoreList() {
-            const container = document.getElementById('chore-list-container');
-            
-            if (masterChores.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <span class="icon">📝</span>
-                        <h3>No chores created yet!</h3>
-                        <p>Create your first chore using the form above.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Filter chores based on current filter
-            const filteredChores = currentFilter === 'all' 
-                ? masterChores 
-                : masterChores.filter(chore => chore.category === currentFilter);
-            
-            if (filteredChores.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <span class="icon">🔍</span>
-                        <h3>No ${currentFilter} chores found!</h3>
-                        <p>Try a different filter or create a new ${currentFilter} chore.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = filteredChores.map(chore => `
-                <div class="chore-list-item">
-                    <div class="chore-header">
-                        <div class="chore-title">${chore.title}</div>
-                        <div class="chore-actions">
-                            <button class="btn-cartoon btn-blue btn-small" onclick="editChore(${chore.id})">
-                                ✏️ Edit
-                            </button>
-                            <button class="btn-cartoon btn-red btn-small" onclick="deleteChore(${chore.id})">
-                                🗑️ Delete
-                            </button>
-                        </div>
-                    </div>
-                    <div class="chore-meta">
-                        <span class="category">${chore.category}</span>
-                        <span class="amount">${chore.amount.toFixed(2)}</span>
-                        <span class="difficulty">${chore.difficulty}⭐</span>
-                    </div>
-                    <div class="chore-description">${chore.description}</div>
-                    ${chore.category !== 'continuous' ? `
-                        <div class="chore-schedule">
-                            📅 ${chore.category === 'daily' ? 'Days: ' : 'Day: '}${chore.schedule.map(d => d.charAt(0).toUpperCase() + d.slice(1)).join(', ')}
-                        </div>
-                    ` : ''}
-                </div>
-            `).join('');
-        }
-
-        function filterChores(filter) {
-            currentFilter = filter;
-            
-            // Update button styles
-            document.querySelectorAll('[id^="filter-"]').forEach(btn => {
-                btn.style.opacity = '0.7';
-                btn.style.transform = 'none';
-            });
-            
-            document.getElementById(`filter-${filter}`).style.opacity = '1';
-            document.getElementById(`filter-${filter}`).style.transform = 'translateY(-2px)';
-            
-            renderChoreList();
-        }
-
-        function editChore(choreId) {
-            const chore = masterChores.find(c => c.id === choreId);
-            if (!chore) return;
-            
-            // Pre-fill form with chore data
-            document.getElementById('chore-title').value = chore.title;
-            document.getElementById('chore-category').value = chore.category;
-            document.getElementById('chore-amount').value = chore.amount;
-            document.getElementById('chore-description').value = chore.description;
-            
-            // Set difficulty
-            setDifficulty(chore.difficulty);
-            
-            // Set schedule
-            selectedDays = [...chore.schedule];
-            updateScheduleOptions();
-            updateDaysDisplay();
-            
-            // Remove the chore from the list (we'll add the edited version)
-            masterChores = masterChores.filter(c => c.id !== choreId);
-            saveMasterChores();
-            renderChoreList();
-            
-            // Scroll to form
-            document.getElementById('chore-form').scrollIntoView({ behavior: 'smooth' });
-            
-            alert('✏️ Chore loaded for editing! Make your changes and click "Add Chore" to save.');
-        }
-
-        function deleteChore(choreId) {
-            const chore = masterChores.find(c => c.id === choreId);
-            if (!chore) return;
-            
-            if (confirm(`🗑️ Are you sure you want to delete "${chore.title}"? This action cannot be undone.`)) {
-                masterChores = masterChores.filter(c => c.id !== choreId);
-                saveMasterChores();
-                renderChoreList();
-                updateDashboardStats();
-                
-                alert('✅ Chore deleted successfully!');
-            }
-        }
-
-        // Load stored children on page load
-        function loadStoredChildren() {
-            const stored = localStorage.getItem('familyChildren');
-            if (stored) {
-                children = JSON.parse(stored);
-            } else {
-                children = [];
-            }
-            renderChildrenList();
-        }
-
-        // Save children to localStorage
-        function saveFamilyChildren() {
-            localStorage.setItem('familyChildren', JSON.stringify(children));
-        }
-
-        // Preview uploaded image
-        function previewImage(input) {
-            const preview = document.getElementById('image-preview');
-            
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    preview.innerHTML = `
-                        <div style="text-align: center;">
-                            <img src="${e.target.result}" style="width: 80px; height: 80px; border-radius: 50%; border: 3px solid var(--cartoon-blue); object-fit: cover;">
-                            <p style="margin-top: 10px; color: #16a34a; font-weight: bold;">✅ Picture selected!</p>
-                        </div>
-                    `;
-                };
-                
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-
-        // Set child difficulty level
-        function setChildDifficulty(level) {
-            selectedChildDifficulty = level;
-            document.getElementById('child-max-difficulty').value = level;
-            
-            // Update visual display
-            const stars = document.querySelectorAll('#child-difficulty-selector .difficulty-star');
-            stars.forEach((star, index) => {
-                if (index < level) {
-                    star.classList.add('active');
-                } else {
-                    star.classList.remove('active');
-                }
-            });
-        }
-
-        // Handle add child form submission
-        function handleAddChild(event) {
-            event.preventDefault();
-            
-            const name = document.getElementById('child-form-name').value;
-            const age = document.getElementById('child-age').value;
-            const maxDifficulty = selectedChildDifficulty;
-            const dailyCount = parseInt(document.getElementById('child-daily-count').value);
-            const weeklyCount = parseInt(document.getElementById('child-weekly-count').value);
-            const username = document.getElementById('child-username').value.toLowerCase().trim();
-            const password = document.getElementById('child-login-password').value;
-            const pictureFile = document.getElementById('child-picture').files[0];
-            
-            // Validation
-            if (!name || !maxDifficulty || !username || !password) {
-                alert('❌ Please fill in all required fields!');
-                return;
-            }
-            
-            if (dailyCount < 0 || dailyCount > 10) {
-                alert('❌ Daily chores must be between 0-10!');
-                return;
-            }
-            
-            if (weeklyCount < 0 || weeklyCount > 10) {
-                alert('❌ Weekly chores must be between 0-10!');
-                return;
-            }
-            
-            // Check if username already exists
-            if (children.some(child => child.username === username)) {
-                alert('❌ Username already taken! Please choose a different username.');
-                return;
-            }
-            
-            // Check if username is valid (alphanumeric only)
-            if (!/^[a-zA-Z0-9]+$/.test(username)) {
-                alert('❌ Username can only contain letters and numbers!');
-                return;
-            }
-            
-            // Handle picture (convert to base64 for storage)
-            if (pictureFile) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    createChildProfile(name, age, e.target.result, maxDifficulty, dailyCount, weeklyCount, username, password);
-                };
-                reader.readAsDataURL(pictureFile);
-            } else {
-                createChildProfile(name, age, null, maxDifficulty, dailyCount, weeklyCount, username, password);
-            }
-        }
-
-        // Create child profile
-        function createChildProfile(name, age, picture, maxDifficulty, dailyCount, weeklyCount, username, password) {
-            const newChild = {
-                id: Date.now(),
-                name: name,
-                age: age || null,
-                picture: picture,
-                username: username,
-                password: password,
-                maxDifficulty: maxDifficulty,
-                dailyChoresCount: dailyCount,
-                weeklyChoresCount: weeklyCount,
-                assignedChores: [],
-                completedChores: [],
-                earnings: {
-                    today: 0,
-                    week: 0,
-                    month: 0,
-                    year: 0
-                },
-                createdAt: new Date().toISOString(),
-                lastAssignment: null
-            };
-            
-            // Assign initial chores
-            assignChores(newChild);
-            
-            // Add to children array
-            children.push(newChild);
-            saveFamilyChildren();
-            renderChildrenList();
-            
-            // Show success message
-            showChildAddedSuccess(newChild);
-            
-            // Reset form
-            resetChildForm();
-        }
-
-        // Assign chores to child based on their settings
-        function assignChores(child) {
-            if (masterChores.length === 0) {
-                console.log('No master chores available for assignment');
-                return;
-            }
-            
-            const availableDaily = masterChores.filter(chore => 
-                chore.category === 'daily' && chore.difficulty <= child.maxDifficulty
-            );
-            
-            const availableWeekly = masterChores.filter(chore => 
-                chore.category === 'weekly' && chore.difficulty <= child.maxDifficulty
-            );
-            
-            const availableContinuous = masterChores.filter(chore => 
-                chore.category === 'continuous' && chore.difficulty <= child.maxDifficulty
-            );
-            
-            child.assignedChores = [];
-            
-            // Assign daily chores
-            const shuffledDaily = [...availableDaily].sort(() => Math.random() - 0.5);
-            for (let i = 0; i < Math.min(child.dailyChoresCount, shuffledDaily.length); i++) {
-                child.assignedChores.push({
-                    ...shuffledDaily[i],
-                    assignedId: Date.now() + i,
-                    completed: false,
-                    assignedDate: new Date().toISOString()
-                });
-            }
-            
-            // Assign weekly chores
-            const shuffledWeekly = [...availableWeekly].sort(() => Math.random() - 0.5);
-            for (let i = 0; i < Math.min(child.weeklyChoresCount, shuffledWeekly.length); i++) {
-                child.assignedChores.push({
-                    ...shuffledWeekly[i],
-                    assignedId: Date.now() + 1000 + i,
-                    completed: false,
-                    assignedDate: new Date().toISOString()
-                });
-            }
-            
-            // Assign all continuous chores
-            availableContinuous.forEach((chore, index) => {
-                child.assignedChores.push({
-                    ...chore,
-                    assignedId: Date.now() + 2000 + index,
-                    completed: false,
-                    assignedDate: new Date().toISOString()
-                });
-            });
-            
-            child.lastAssignment = new Date().toISOString();
-        }
-
-        // Show child added success message
-        function showChildAddedSuccess(child) {
-            const success = document.createElement('div');
-            success.innerHTML = `
-                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-                            background: linear-gradient(135deg, #dcfce7, #bbf7d0); 
-                            border: 4px solid #16a34a; border-radius: 25px; 
-                            padding: 30px; text-align: center; z-index: 1000;
-                            animation: bounce-fun 0.5s ease-in-out;">
-                    <div style="font-size: 4rem; margin-bottom: 15px;">🎉</div>
-                    <h3 style="font-size: 1.5rem; font-weight: bold; color: #15803d; margin-bottom: 10px;">
-                        Child Added Successfully!
-                    </h3>
-                    <p style="font-size: 1.2rem; color: #166534; margin-bottom: 15px;">
-                        ${child.name} has been added to your family!
-                    </p>
-                    <p style="font-size: 1rem; color: #16a34a;">
-                        Username: ${child.username} | ${child.assignedChores.length} chores assigned
-                    </p>
-                </div>
-            `;
-            
-            document.body.appendChild(success);
-            
-            setTimeout(() => {
-                document.body.removeChild(success);
-            }, 3000);
-        }
-
-        // Reset child form
-        function resetChildForm() {
-            document.getElementById('child-form').reset();
-            selectedChildDifficulty = 0;
-            
-            // Reset visual elements
-            document.querySelectorAll('#child-difficulty-selector .difficulty-star').forEach(star => 
-                star.classList.remove('active')
-            );
-            document.getElementById('image-preview').innerHTML = '';
-        }
-
-        // Render children list
-        function renderChildrenList() {
-            const container = document.getElementById('children-list-container');
-            
-            if (children.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <span class="icon">👶</span>
-                        <h3>No children added yet!</h3>
-                        <p>Add your first child using the form above.</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            container.innerHTML = children.map(child => {
-                const completedCount = child.assignedChores.filter(c => c.completed).length;
-                const totalCount = child.assignedChores.length;
-                const todayEarnings = child.assignedChores
-                    .filter(c => c.completed)
-                    .reduce((sum, c) => sum + c.amount, 0);
-                
-                return `
-                    <div class="child-profile-card">
-                        <div class="child-header">
-                            <div class="child-avatar">
-                                ${child.picture ? 
-                                    `<img src="${child.picture}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">` :
-                                    child.name.charAt(0).toUpperCase()
-                                }
-                            </div>
-                            <div class="child-info">
-                                <div class="child-name">${child.name}</div>
-                                <div class="child-details">
-                                    ${child.age ? `Age: ${child.age} • ` : ''}Max Difficulty: ${child.maxDifficulty}⭐ • 
-                                    Daily: ${child.dailyChoresCount}, Weekly: ${child.weeklyChoresCount}
-                                </div>
-                                <div class="child-details">
-                                    Username: <strong>${child.username}</strong> | Password: <strong>${child.password}</strong>
-                                </div>
-                            </div>
-                            <div class="child-actions">
-                                <button class="btn-cartoon btn-blue btn-small" onclick="openChildProfile(${child.id})">
-                                    👁️ View Profile
-                                </button>
-                                <button class="btn-cartoon btn-green btn-small" onclick="reassignChores(${child.id})">
-                                    🔄 Reassign Chores
-                                </button>
-                                <button class="btn-cartoon btn-red btn-small" onclick="deleteChild(${child.id})">
-                                    🗑️ Remove
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div class="child-stats">
-                            <div class="child-stat completed">
-                                <div class="stat-value" style="color: var(--cartoon-green);">${completedCount}/${totalCount}</div>
-                                <div class="stat-label">Chores Complete</div>
-                            </div>
-                            <div class="child-stat earnings">
-                                <div class="stat-value" style="color: var(--cartoon-green);">${todayEarnings.toFixed(2)}</div>
-                                <div class="stat-label">Today's Earnings</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function weeklySchedule() {
-            alert('📅 Weekly Schedule feature coming soon! In a real app, this would show a calendar view where you can assign chores for the entire week.');
-        }
-
-        function generateReport() {
-            alert('📊 Generate Report feature coming soon! In a real app, this would create detailed analytics about your family\'s chore completion and earnings.');
-        }
-
-        // Show upgrade modal
-        function showUpgradeModal() {
-            alert('✨ UPGRADE TO PREMIUM MAGIC! ✨\n\n🚀 In a real app, this would redirect to Stripe checkout for $7.99/month!\n\n✨ Premium features include:\n• Unlimited chores\n• Advanced scheduling\n• Reward systems\n• Detailed analytics\n• Family sharing\n• Priority support');
-        }
-
-        // Alternative upgrade function name
-        function upgradeModal() {
-            showUpgradeModal();
-        }
-
-        // Logout function
-        function logout() {
-            currentUser = null;
-            isPremium = false;
-            showEarnings = true;
-            
-            // Clear session storage
-            localStorage.removeItem('currentUser');
-            
-            alert('👋 You have been logged out successfully!');
-            showPage('landing-page');
-        }
-
-        // Check for existing session on page load
-        function checkExistingSession() {
-            const savedUser = localStorage.getItem('currentUser');
-            if (savedUser) {
-                try {
-                    currentUser = JSON.parse(savedUser);
-                    console.log('Restored session for:', currentUser.name);
-                    
-                    // If user was logged in, show appropriate dashboard
-                    if (currentUser.type === 'child') {
-                        showPage('child-dashboard-page');
-                        if (currentUser.id === 'demo') {
-                            updateChildDashboard(currentUser.name);
-                        } else {
-                            // Load child data and update dashboard
-                            loadStoredChildren();
-                            const child = children.find(c => c.id === currentUser.id);
-                            if (child) {
-                                currentUser.childData = child;
-                                updateChildDashboardFromProfile(child);
-                            } else {
-                                // Child not found, logout
-                                logout();
-                                return;
-                            }
-                        }
-                    } else {
-                        showPage('dashboard-page');
-                        updateDashboardForUser();
-                    }
-                } catch (error) {
-                    console.error('Error restoring session:', error);
-                    localStorage.removeItem('currentUser');
-                }
-            }
-        }
-
-        // Initialize the app
-        document.addEventListener('DOMContentLoaded', function() {
-            // Check for existing session first
-            checkExistingSession();
-            
-            // If no session found, start on landing page
-            if (!currentUser) {
-                showPage('landing-page');
-            }
-            
-            // Initialize child dashboard progress
-            updateProgressDisplay();
-            updateAchievements();
-            
-            // Initialize filter buttons
-            filterChores('all');
-        });
-    </script>
-</body>
-</html>="feature-desc">
-                        Separate dashboards for parents and children with age-appropriate interfaces!
-                    </p>
-                </div>
-
-                <div class="feature-card">
-                    <span class="feature-icon animate-wiggle">🌟</span>
-                    <h3 class="feature-title">🌟 Smart Assignment</h3>
-                    <p class="feature-desc">
-                        Automatic weekly chore distribution that prevents duplicates and repetition!
-                    </p>
-                </div>
-
-                <div class="feature-card">
-                    <span class="feature-icon">🏆</span>
-                    <h3 class="feature-title">🏆 Earn Rewards</h3>
-                    <p class="feature-desc">
-                        Children earn money for completed chores with automatic weekly earnings calculation!
-                    </p>
-                </div>
-            </div>
-            
-            <!-- Centered Progress Tracking Card -->
-            <div style="display: flex; justify-content: center; margin: 30px auto; max-width: 1200px; padding: 0 20px;">
-                <div class="feature-card" style="max-width: 400px;">
-                    <span class="feature-icon animate-pulse-rainbow">📊</span>
-                    <h3 class="feature-title">📊 Progress Tracking</h3>
-                    <p class
+                    <button class="btn-cartoon" style="background: #6b
