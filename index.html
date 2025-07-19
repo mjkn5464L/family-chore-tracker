@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ChoreTracker - Family Chore Management</title>
     <style>
-        /* Fun cartoon colors  */
+        /* Fun cartoon colors */
         :root {
             --cartoon-orange: #FF6B35;
             --cartoon-pink: #FF69B4;
@@ -1608,6 +1608,8 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             
+            console.log('Attempting login for:', email); // Debug log
+            
             // Check demo account first
             if (email === 'demo@family.com' && password === 'demo123') {
                 currentUser = {
@@ -1616,6 +1618,9 @@
                     email: email,
                     subscription: 'free'
                 };
+                
+                // Store current session
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 
                 alert('🎉 Welcome back to the demo! Redirecting to your dashboard...');
                 showPage('dashboard-page');
@@ -1629,6 +1634,8 @@
             
             // Check stored accounts
             const existingAccounts = JSON.parse(localStorage.getItem('familyAccounts') || '{}');
+            console.log('Existing accounts:', Object.keys(existingAccounts)); // Debug log
+            
             const account = existingAccounts[email];
             
             if (account && account.password === password) {
@@ -1639,13 +1646,23 @@
                     subscription: account.subscription || 'free'
                 };
                 
+                // Store current session
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                
                 alert(`🎉 Welcome back, ${account.familyName} family! Redirecting to your dashboard...`);
                 showPage('dashboard-page');
                 updateDashboardForUser();
                 
                 // Update welcome message
-                document.querySelector('.nav-actions span').textContent = `Welcome, ${account.familyName} family! 🎉`;
+                const welcomeElement = document.getElementById('welcome-message');
+                if (welcomeElement) {
+                    welcomeElement.textContent = `Welcome, ${account.familyName} family! 🎉`;
+                }
             } else {
+                console.log('Login failed for:', email); // Debug log
+                console.log('Account found:', !!account); // Debug log
+                console.log('Password match:', account ? account.password === password : false); // Debug log
+                
                 alert('❌ Invalid credentials! Please check your email and password, or use the demo account:\nEmail: demo@family.com\nPassword: demo123');
             }
         }
@@ -1661,6 +1678,9 @@
                     name: name,
                     type: 'child'
                 };
+                
+                // Store current session
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
                 
                 alert('🌺 Welcome ' + name + '! Let\'s check out your chores!');
                 showPage('child-dashboard-page');
@@ -2165,14 +2185,46 @@
             currentUser = null;
             isPremium = false;
             showEarnings = true;
+            
+            // Clear session storage
+            localStorage.removeItem('currentUser');
+            
             alert('👋 You have been logged out successfully!');
             showPage('landing-page');
         }
 
+        // Check for existing session on page load
+        function checkExistingSession() {
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                try {
+                    currentUser = JSON.parse(savedUser);
+                    console.log('Restored session for:', currentUser.email);
+                    
+                    // If user was logged in, show dashboard
+                    if (currentUser.type === 'child') {
+                        showPage('child-dashboard-page');
+                        updateChildDashboard(currentUser.name);
+                    } else {
+                        showPage('dashboard-page');
+                        updateDashboardForUser();
+                    }
+                } catch (error) {
+                    console.error('Error restoring session:', error);
+                    localStorage.removeItem('currentUser');
+                }
+            }
+        }
+
         // Initialize the app
         document.addEventListener('DOMContentLoaded', function() {
-            // Start on landing page
-            showPage('landing-page');
+            // Check for existing session first
+            checkExistingSession();
+            
+            // If no session found, start on landing page
+            if (!currentUser) {
+                showPage('landing-page');
+            }
             
             // Initialize child dashboard progress
             updateProgressDisplay();
